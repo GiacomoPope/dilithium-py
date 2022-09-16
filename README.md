@@ -149,12 +149,12 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 The file [`modules.py`](modules.py) contains the classes `Module` and `Matrix`.
 A module is a generalisation of a vector space, where the field
-of scalars is replaced with a ring. In the case of Kyber, we 
+of scalars is replaced with a ring. In the case of Dilithium, we 
 need the module with the ring $R_q$ as described above. 
 
 `Matrix` allows elements of the module to be of size $m \times n$
-but for Kyber, we only need vectors of length $k$ and square
-matricies of size $k \times k$.
+For Dilithium, we need vectors of length $k$ and $l$ and a matrix
+of size $l \times k$. 
 
 As an example of the operations we can perform with out `Module`
 lets revisit the ring from the previous example:
