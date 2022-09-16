@@ -25,8 +25,8 @@ closely matches the code which we use within `dilithium.py` and supporting files
 
 ### KATs
 
-This implementation follows all the KAT vectors, generated from the reference
-implementation.
+This implementation passes all the KAT vectors, generated from the reference
+implementation version 3.1.
 
 These tests, as well as other internal unit tests are the file 
 [`test_dilithium.py`](test_dilithium.py).
