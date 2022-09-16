@@ -3,15 +3,19 @@ from collections import deque
 def reduce_mod_pm(a, q):
     r = a % q
     if r > (q >> 1):
-        r -= q
+        r -= q        
+    # assert r > -(q >> 1)
+    # assert r <= (q >> 1)
     return r
 
 def decompose(r, a, q):
     r  = r % q
     r0 = reduce_mod_pm(r, a)
-    if r - r0 == q - 1:
+    r1 = r - r0
+    if r1 == q - 1:
         return 0, r0 - 1
-    r1 = (r - r0) // a
+    r1 = r1 // a
+    # assert r == r1*a + r0
     return r1, r0
 
 def high_bits(r, a, q):
@@ -24,7 +28,7 @@ def low_bits(r, a, q):
 
 def make_hint(z, r, a, q):
     r1 = high_bits(r, a, q)
-    v1 = high_bits(r + z, a, q)
+    v1 = high_bits(r + z, a, q)        
     return int(r1 != v1)
     
 def use_hint(h,r,a,q):

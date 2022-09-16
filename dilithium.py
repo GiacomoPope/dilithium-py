@@ -12,7 +12,7 @@ try:
 except ImportError as e:
     print("Error importing AES CRT DRGB. Have you tried installing requirements?")
     print(f"ImportError: {e}\n")
-    print("Kyber will work perfectly fine with system randomness")
+    print("Dilithium will work perfectly fine with system randomness")
     
 DEFAULT_PARAMETERS = {
     "dilithium2" : {
@@ -181,7 +181,7 @@ class Dilithium:
         # Set the first 8 bytes for the sign, and leave the rest for
         # sampling.
         sign_bytes = Shake256.read(8)
-        sign_int = int.from_bytes(sign_bytes, "big")
+        sign_int = int.from_bytes(sign_bytes, "little")
         
         # Set the list of coeffs to be 0
         coeffs = [0 for _ in range(self.n)]
@@ -398,7 +398,7 @@ class Dilithium:
         
         # Split bytes into suitible chunks
         rho, rho_prime, K = seed_bytes[:32], seed_bytes[32:96], seed_bytes[96:]
-        
+                
         # Generate matrix A ∈ R^(kxl)
         A = self._expandA(rho, is_ntt=True)
         
@@ -437,7 +437,7 @@ class Dilithium:
         
         alpha = self.gamma_2 << 1
         while True:
-            y  = self._expandMask(rho_prime, kappa)
+            y = self._expandMask(rho_prime, kappa)
             y_hat = y.copy_to_ntt()
             
             # increment the nonce
@@ -445,7 +445,8 @@ class Dilithium:
             
             w  = (A @ y_hat).from_ntt()
             w.reduce_coefficents() 
-            w1 = w.high_bits(alpha)
+            # Extract out both the high and low bits
+            w1, w0 = w.decompose(alpha)
             
             # Create challenge polynomial
             w1_bytes = w1.bit_pack_w(self.gamma_2)
@@ -455,20 +456,19 @@ class Dilithium:
             # Store c in NTT form
             c.to_ntt()
             
-            z           = y + s1.scale(c).from_ntt()   
-            w_minus_cs2 = w - s2.scale(c).from_ntt()   
-            r0          = w_minus_cs2.low_bits(alpha)
+            z            = y  + s1.scale(c).from_ntt()   
+            w0_minus_cs2 = w0 - s2.scale(c).from_ntt()
             
             if z.check_norm_bound(self.gamma_1 - self.beta):
                 continue
-            if r0.check_norm_bound(self.gamma_2 - self.beta):
+            if w0_minus_cs2.check_norm_bound(self.gamma_2 - self.beta):
                 continue
             
             c_t0 = t0.scale(c).from_ntt()
             if c_t0.check_norm_bound(self.gamma_2):
                 continue
             
-            h = self._make_hint(c_t0.scale(-1), w_minus_cs2 + c_t0, alpha)
+            h = self._make_hint(c_t0.scale(-1), w0_minus_cs2 + c_t0, alpha)
             if self._sum_hint(h) > self.omega:
                 continue
             

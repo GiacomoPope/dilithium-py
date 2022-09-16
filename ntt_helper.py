@@ -80,9 +80,13 @@ class NTTHelper():
         # t = (a - (t * self.q)) >> 32
         # if t <= -(self.q - 1) >> 2:
         #     t += self.q
-        r = a * self.mont_r_inv % self.q
+        r = (a * self.mont_r_inv) % self.q
         if r > (self.q >> 1):
             r -= self.q
+        # if not r > -(self.q >> 1):
+        #    print(f"{r}, { -(self.q >> 1)}, {self.q}")
+        # if not r <= (self.q >> 1):
+        #     print(f"{r}, {(self.q >> 1)}, {self.q}")
         return r
         
     def to_montgomery(self, poly):
@@ -92,26 +96,6 @@ class NTTHelper():
     def from_montgomery(self, poly):
         poly.coeffs = [self.montgomery_reduce(c) for c in poly.coeffs]
         return poly
-
-    def reduce_mod_q(self, a):
-        """
-        TODO: dead code
-        return a mod q
-        """
-        return a % self.q
-        
-    def barrett_reduce(self,a):
-        """
-        TODO: dead code
-        This should be faster, but because
-        python, the function `reduce_mod_q` is faster...
-        
-        a mod q in -(q-1)/2, ... ,(q-1)/2
-        """
-        v = ((1 << 26) + self.q // 2) // self.q
-        t = (v * a + (1 << 25)) >> 26
-        t = t * self.q
-        return (a - t)
         
     def ntt_mul(self, a, b):
         """

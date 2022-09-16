@@ -40,6 +40,7 @@ def benchmark_dilithium(Dilithium, name, count):
         t2 = time()
         verify = Dilithium.verify(pk, m, sig)
         verify_times.append(time() - t2)
+        assert verify
     
     print(f"Keygen median: {round(median(keygen_times), 3)}")
     print(f"Sign median: {round(median(sign_times),3)}")
@@ -49,7 +50,7 @@ def benchmark_dilithium(Dilithium, name, count):
 if __name__ == '__main__':
     # I used 500 calls for the README, but you might want to 
     # shrink this down if you're playing
-    count = 500
+    count = 10
     benchmark_dilithium(Dilithium2, "Dilithium2", count)
     benchmark_dilithium(Dilithium3, "Dilithium3", count)
     benchmark_dilithium(Dilithium5, "Dilithium5", count)

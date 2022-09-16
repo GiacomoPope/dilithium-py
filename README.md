@@ -28,29 +28,28 @@ closely matches the code which we use within `dilithium.py` and supporting files
 :rotating_light: 
 :skull_and_crossbones:
 **This implementation does not pass the specification's KAT files.**
-Currently, there seems to be some bugs... :bug: :ant: :bee:.
-
-I'm (currently) actively working on making `dilithium-py` pass all KATs.
 :skull_and_crossbones:
-:rotating_light: 
+:rotating_light:
 
-As the whole specification works self-consistently, I assume these
-bugs come from:
+Of the all 300 KAT we have for Dilithium2, Dilithium3 and Dilithium5
+we have an error in the signature generation for one test in the
+Dilithium2 file.
 
-- How vectors are being packed
-- How polynomials are being sampled
-- How seeds are being generated
+There is one element of the hint vector which is missing one coefficient
+so we're 1-bit away from passing all KAT values. If you think you know
+where the error could be, please let me know!
 
-### Bug(?) in specification
+### Generating KAT files
 
-Additionally, there seems to be a bug in the KAT files themselves.
-Unpacking the secret key, we find that the value denoted `K` in the
-specification and `key` in the implementation 
-seems to have been taken as the bytes `seed_bytes[64:96]` rather than
-the intended `seed_bytes[96:128]`.
+This implementation is based off the most recent specification (v3.1). 
+There were 
+[breaking changes](https://github.com/pq-crystals/dilithium/commit/e989e691ae3d3f5933d012ab074bdc413ebc6fad) 
+to the KAT files submitted to NIST when Dilithium was updated to 3.1, so the
+NIST KAT files will not match our code.
 
-For more information, see the minimal example showing this bug in
-the file [`minimal_example.py`](minimal_example.py).
+To deal with this, we generated our own KAT files from the 
+[reference implementation](https://github.com/pq-crystals/dilithium/releases/tag/v3.1)
+for version 3.1. These are the files inside [assets](assets/).
 
 ### Dependencies
 
