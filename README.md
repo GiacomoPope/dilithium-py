@@ -73,11 +73,12 @@ for use:
 - `Dilithium.keygen()`: generate a bit-packed keypair `(pk, sk)`
 - `Dilithium.sign(sk, msg)`: generate a bit-packed signature `sig` 
 from the message `msg` and bit-packed secret key `sk`.
-- `Dilithium.verify(pk, m, sig)`: verify that the bit-packed `sig` is
-valid for a given message `m` and bit-packed public key `pk`.
+- `Dilithium.verify(pk, msg, sig)`: verify that the bit-packed `sig` is
+valid for a given message `msg` and bit-packed public key `pk`.
 
-To use `Dilithium()` it must be initialised with a dictionary of the 
-protocol parameters. An example can be seen in `DEFAULT_PARAMETERS`.
+To use `Dilithium()`, it must be initialised with a dictionary of the 
+protocol parameters. An example can be seen in `DEFAULT_PARAMETERS` in
+the file [`dilithium.py`](dilithium.py)
 
 Additionally, the class has been initialised with these default parameters, 
 so you can simply import the NIST level you want to play with:
@@ -93,7 +94,7 @@ so you can simply import the NIST level you want to play with:
 >>> sig = Dilithium2.sign(sk, msg)
 >>> assert Dilithium2.verify(pk, msg, sig)
 >>>
->>> Verification will fail with the wrong msg or pk
+>>> # Verification will fail with the wrong msg or pk
 >>> assert not Dilithium2.verify(pk, b"", sig)
 >>> pk_new, sk_new = Dilithium2.keygen()
 >>> assert not Dilithium2.verify(pk_new, msg, sig)
