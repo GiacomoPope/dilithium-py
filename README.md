@@ -96,9 +96,7 @@ The above example would also work with the other NIST levels
 
 ### Benchmarks
 
-**TODO**: Better benchmarks? Although this was never about speed.
-
-For now, here are some approximate benchmarks:
+Some very rough benchmarks to give an idea about performance:
 
 |  500 Iterations          | `Dilithium2` | `Dilithium3` | `Dilithium5` |
 |--------------------------|--------------|--------------|--------------|

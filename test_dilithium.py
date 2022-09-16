@@ -1,7 +1,7 @@
 import unittest
 import os
 from dilithium import Dilithium2, Dilithium3, Dilithium5
-from aes256_crt_drgb import AES256_CRT_DRGB
+from aes256_ctr_drgb import AES256_CTR_DRGB
 
 def parse_kat_data(data):
     """
@@ -66,7 +66,7 @@ class TestDilithiumDRGB(unittest.TestCase):
     """
     Ensure that deterministic DRGB is deterministic!
     
-    Uses AES256 CRT DRGB for randomness.
+    Uses AES256 CTR DRGB for randomness.
     Note: requires pycryptodome for AES impl.
     """
     
@@ -129,7 +129,7 @@ class TestKnownTestValuesDRGB(unittest.TestCase):
     def test_known_answer_DRGB(self):
         # Set DRGB to generate seeds
         entropy_input = bytes([i for i in range(48)])
-        rng = AES256_CRT_DRGB(entropy_input)
+        rng = AES256_CTR_DRGB(entropy_input)
         
         with open("assets/PQCsignKAT_Dilithium2.rsp") as f:
             # extract data from KAT

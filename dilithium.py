@@ -7,9 +7,9 @@ from utils import *
 from ntt_helper import NTTHelperDilithium
 
 try:
-    from aes256_crt_drgb import AES256_CRT_DRGB
+    from aes256_ctr_drgb import AES256_CTR_DRGB
 except ImportError as e:
-    print("Error importing AES CRT DRGB. Have you tried installing requirements?")
+    print("Error importing AES256 CTR DRGB. Have you tried installing requirements?")
     print(f"ImportError: {e}\n")
     print("Dilithium will work perfectly fine with system randomness")
     
@@ -86,12 +86,12 @@ class Dilithium:
     def set_drgb_seed(self, seed):
         """
         Setting the seed switches the entropy source
-        from os.urandom to AES256 CRT DRGB
+        from os.urandom to AES256 CTR DRGB
             
         Note: requires pycryptodome for AES impl.
         (Seemed overkill to code my own AES for Kyber)
         """
-        self.drgb = AES256_CRT_DRGB(seed)
+        self.drgb = AES256_CTR_DRGB(seed)
         self.random_bytes = self.drgb.random_bytes
         
     def reseed_drgb(self, seed):
