@@ -48,7 +48,7 @@ for version 3.1. These are the files inside [assets](assets/).
 Originally, as with `kyber-py`, this project was planned to have zero
 dependencies, however like `kyber-py`, to pass the KATs, I need  a 
 deterministic CSRNG. The reference implementation uses
-AES256 CRT DRGB. I have implemented this in [`ase256_crt_drgb.py`](ase256_crt_drgb.py). 
+AES256 CTR DRGB. I have implemented this in [`ase256_ctr_drgb.py`](ase256_ctr_drgb.py). 
 However, I have not implemented AES itself, instead I import this from `pycryptodome`.
 
 To install dependencies, run `pip -r install requirements`.
@@ -116,3 +116,210 @@ All times recorded using a Intel Core i7-9750H CPU.
 * Add documentation on how each of the components works
 * Add documentation for working with DRGB and setting the seed
 
+## Discussion of Implementation
+
+### Polynomials
+
+The file [`polynomials.py`](polynomials.py) contains the classes 
+`PolynomialRing` and 
+`Polynomial`. This implements the univariate polynomial ring
+
+$$
+R_q = \mathbb{F}_q[X] /(X^n + 1) 
+$$
+
+The implementation is inspired by `SageMath` and you can create the
+ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
+
+#### Example
+
+```python
+>>> R = PolynomialRing(11, 8)
+>>> x = R.gen()
+>>> f = 3*x**3 + 4*x**7
+>>> g = R.random_element(); g
+5 + x^2 + 5*x^3 + 4*x^4 + x^5 + 3*x^6 + 8*x^7
+>>> f*g
+8 + 9*x + 10*x^3 + 7*x^4 + 2*x^5 + 5*x^6 + 10*x^7
+>>> f + f
+6*x^3 + 8*x^7
+>>> g - g
+0
+```
+
+### Modules
+
+The file [`modules.py`](modules.py) contains the classes `Module` and `Matrix`.
+A module is a generalisation of a vector space, where the field
+of scalars is replaced with a ring. In the case of Kyber, we 
+need the module with the ring $R_q$ as described above. 
+
+`Matrix` allows elements of the module to be of size $m \times n$
+but for Kyber, we only need vectors of length $k$ and square
+matricies of size $k \times k$.
+
+As an example of the operations we can perform with out `Module`
+lets revisit the ring from the previous example:
+
+#### Example
+
+```python
+>>> R = PolynomialRing(11, 8)
+>>> x = R.gen()
+>>>
+>>> M = Module(R)
+>>> # We create a matrix by feeding the coefficients to M
+>>> A = M([[x + 3*x**2, 4 + 3*x**7], [3*x**3 + 9*x**7, x**4]])
+>>> A
+[    x + 3*x^2, 4 + 3*x^7]
+[3*x^3 + 9*x^7,       x^4]
+>>> # We can add and subtract matricies of the same size
+>>> A + A
+[  2*x + 6*x^2, 8 + 6*x^7]
+[6*x^3 + 7*x^7,     2*x^4]
+>>> A - A
+[0, 0]
+[0, 0]
+>>> # A vector can be constructed by a list of coefficents
+>>> v = M([3*x**5, x])
+>>> v
+[3*x^5, x]
+>>> # We can compute the transpose
+>>> v.transpose()
+[3*x^5]
+[    x]
+>>> v + v
+[6*x^5, 2*x]
+>>> # We can also compute the transpose in place
+>>> v.transpose_self()
+[3*x^5]
+[    x]
+>>> v + v
+[6*x^5]
+[  2*x]
+>>> # Matrix multiplication follows python standards and is denoted by @
+>>> A @ v
+[8 + 4*x + 3*x^6 + 9*x^7]
+[        2 + 6*x^4 + x^5]
+```
+
+We also carry through `Matrix.encode()` and 
+`Module.decode(bytes, n_rows, n_cols)` 
+which simply use the above functions defined for polynomials and run for each
+element.
+
+#### Example
+
+We can see how encoding / decoding a vector works in the following example.
+Note that we can swap the rows/columns to decode bytes into the transpose
+when working with a vector.
+
+```python
+>>> R = PolynomialRing(11, 8)
+>>> M = Module(R)
+>>> v = M([R.random_element() for _ in range(2)])
+>>> v_bytes = v.encode()
+>>> v_bytes.hex()
+'d'
+>>> M.decode(v_bytes, 1, 2) == v
+True
+>>> v_bytes = v.encode(l=10)
+>>> v_bytes.hex()
+'a014020100103004000040240a03009030080200'
+>>> M.decode(v_bytes, 1, 2, l=10) == v
+True
+>>> M.decode(v_bytes, 2, 1, l=10) == v.transpose()
+True
+>>> # We can also compress and decompress elements of the module
+>>> v
+[5 + 10*x + 4*x^2 + 2*x^3 + 8*x^4 + 3*x^5 + 2*x^6, 2 + 9*x + 5*x^2 + 3*x^3 + 9*x^4 + 3*x^5 + x^6 + x^7]
+>>> v.compress(1)
+[1 + x^2 + x^4 + x^5, x^2 + x^3 + x^5]
+>>> v.decompress(1)
+[6 + 6*x^2 + 6*x^4 + 6*x^5, 6*x^2 + 6*x^3 + 6*x^5]
+```
+
+### Number Theoretic Transform
+
+**TODO**: More details about the NTT.
+
+We can transform polynomials to NTT form and from NTT form
+with `poly.to_ntt()` and `poly.from_ntt()`.
+
+When we perform operations between polynomials, `(+, -, *)`
+either both or neither must be in NTT form.
+
+```py
+>>> f = R.random_element()
+>>> f == f.to_ntt().from_ntt()
+True
+>>> g = R.random_element()
+>>> h = f*g
+>>> h == (f.to_ntt() * g.to_ntt()).from_ntt()
+True
+```
+
+While writing this README, performing multiplication of of polynomials
+in NTT form is about 100x faster when working with the ring used by
+Dilithium.
+
+```py
+>>> # Lets work in the ring we use for Dilithium
+>>> R = Dilithium2.R
+>>> # Generate some random elements
+>>> f = R.random_element()
+>>> g = R.random_element()
+>>> # Takes about 10 seconds to perform 1000 multiplications
+>>> timeit.timeit("f*g", globals=globals(), number=1000)
+9.621509193995735
+>>> # Now lets convert to NTT and try again
+>>> f.to_ntt()
+>>> g.to_ntt()
+>>> # Now it only takes ~0.1s to perform 1000 multiplications!
+>>> timeit.timeit("f*g", globals=globals(), number=1000)
+0.12979038299818058
+```
+
+These functions extend to modules
+
+```py
+>>> M = Dilithium2.M
+>>> R = Dilithium2.R
+>>> v = M([R.random_element(), R.random_element()])
+>>> u = M([R.random_element(), R.random_element()]).transpose()
+>>> A = u @ v
+>>> A == (u.to_ntt() @ v.to_ntt()).from_ntt()
+True
+```
+
+As operations on the module are just operations between elements, 
+we expect a similar 100x speed up when working in NTT form:
+
+```py
+>>> u = M([R.random_element(), R.random_element()]).transpose()
+>>> v = M([R.random_element(), R.random_element()])
+>>> timeit.timeit("u@v", globals=globals(), number=1000)
+38.39359304799291
+>>> u = u.to_ntt()
+>>> v = v.to_ntt()
+>>> timeit.timeit("u@v", globals=globals(), number=1000)
+0.495470915993792
+```
+
+### Bit Packing
+
+```
+TODO
+```
+
+### Random Sampling
+
+```
+TODO
+```
+
+### AES256-CTR-DRGB
+
+```
+TODO
+```
