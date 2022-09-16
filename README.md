@@ -25,19 +25,11 @@ closely matches the code which we use within `dilithium.py` and supporting files
 
 ### KATs
 
-:rotating_light: 
-:skull_and_crossbones:
-**This implementation does not pass the specification's KAT files.**
-:skull_and_crossbones:
-:rotating_light:
+This implementation follows all the KAT vectors, generated from the reference
+implementation.
 
-Of the all 300 KAT we have for Dilithium2, Dilithium3 and Dilithium5
-we have an error in the signature generation for one test in the
-Dilithium2 file.
-
-There is one element of the hint vector which is missing one coefficient
-so we're 1-bit away from passing all KAT values. If you think you know
-where the error could be, please let me know!
+These tests, as well as other internal unit tests are the file 
+[`test_dilithium.py`](test_dilithium.py).
 
 ### Generating KAT files
 
@@ -110,17 +102,16 @@ For now, here are some approximate benchmarks:
 
 |  500 Iterations          | `Dilithium2` | `Dilithium3` | `Dilithium5` |
 |--------------------------|--------------|--------------|--------------|
-| `KeyGen()` Median Time   |  0.014s      | 0.023s       | 0.036s       |
-| `Sign()`   Median Time   |  0.084s      | 0.140s       | 0.167s       |
-| `Sign()`   Average Time  |  0.115s      | 0.173s       | 0.213s       |
-| `Verify()` Median Time   |  0.017s      | 0.027s       | 0.042s       |
+| `KeyGen()` Median Time   |  0.014s      | 0.022s       | 0.033s       |
+| `Sign()`   Median Time   |  0.073s      | 0.113s       | 0.143s       |
+| `Sign()`   Average Time  |  0.092s      | 0.143s       | 0.175s       |
+| `Verify()` Median Time   |  0.017s      | 0.025s       | 0.039s       |
 
 All times recorded using a Intel Core i7-9750H CPU. 
 
 ## Future Plans
 
-All plans are on hold for documentation until the KAT vectors pass.
-
+* **First plan**: Add documentation to the code
 * Add examples for each of the functions
 * Add documentation on how each of the components works
 * Add documentation for working with DRGB and setting the seed

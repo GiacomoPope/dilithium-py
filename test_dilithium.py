@@ -145,10 +145,6 @@ class TestKnownTestValuesDRGB(unittest.TestCase):
             self.assertEqual(seed, seed_check)
             self.assertEqual(msg,  msg_check)
 
-"""
-Currently none of the KATs pass. This is a work in 
-progress (see README.md)
-"""
 class TestKnownTestValuesDilithium(unittest.TestCase):
     def generic_test_dilithium(self, Dilithium, file_name):
         with open(f"assets/{file_name}") as f:
@@ -177,62 +173,25 @@ class TestKnownTestValuesDilithium(unittest.TestCase):
             # sm_KAT has message as the last mlen bytes
             self.assertEqual(msg, sm_KAT[-msg_len:])
             
-            # Check the signature has the right length
+            # Ensure that a generated signature matches
+            # the one extracted from the KAT
             sig = Dilithium.sign(sk, msg)
-            
-            if sig != sig_KAT:
-                failure +=1
-            
-            """
-            WIP
-            
-            Currently one of the 100 KAT for Dilithium2
-            fails. All others pass.
-            
-            The hint vector has one polynomial which has
-            one too little elements...
-                
-            my poly: 
-                [x^16 + x^40 + x^50 + x^57 + x^79 + x^86 + x^87 + x^120 + x^128 + x^143 + x^174 + x^178 + x^222 + x^239]
-            correct poly:
-                [x^16 + x^40 + x^50 + x^57 + x^79 + x^86 + x^87 + x^120 + x^128 + x^143 + x^155 + x^174 + x^178 + x^222 + x^239]
-                
-            I have not been able to track down the issue. :(
-            """
-            # self.assertEqual(sig, sig_KAT)
-            # # Check that the generated signature is valid
-            # verify     = Dilithium.verify(pk, msg, sig)
-            # verify_KAT = Dilithium.verify(pk, msg, sig_KAT)
-            # self.assertTrue(verify)
-            # self.assertTrue(verify_KAT)
-            
-            # if not verify:
-            #     # DEBUG
-            #     c1,z1,h1 = Dilithium._unpack_sig(sig)
-            #     c2,z2,h2 = Dilithium._unpack_sig(sig_KAT)
-                
-            #     print(c1 == c2, "Tilde check")
-            #     print(z1 == z2, "z check")
-            #     print(h1 == h2, "h check")
-                
-            #     for i in range(len(h1.rows)):
-            #         if h1[i] != h2[i]:
-            #             print(h1[i])
-            #             print(h2[i])
-            #             self.assertTrue(False)
+            self.assertEqual(sig, sig_KAT)
 
-        print(f"There was: {failure} failures of {len(parsed_data)} KATs")
+            # Finally, make sure that the signature is
+            # valid for the message
+            verify_KAT = Dilithium.verify(pk, msg, sig)
+            self.assertTrue(verify_KAT)
+            
+            
 
     def test_dilithium2(self):
-        print(f"Testing Dilithium2")
         self.generic_test_dilithium(Dilithium2, "PQCsignKAT_Dilithium2.rsp")
         
     def test_dilithium3(self):
-        print(f"Testing Dilithium3")
         self.generic_test_dilithium(Dilithium3, "PQCsignKAT_Dilithium3.rsp")
         
     def test_dilithium5(self):
-        print(f"Testing Dilithium5")
         self.generic_test_dilithium(Dilithium5, "PQCsignKAT_Dilithium5.rsp")
     
 if __name__ == '__main__':

@@ -1,21 +1,44 @@
 from collections import deque
 
-def reduce_mod_pm(a, q):
-    r = a % q
-    if r > (q >> 1):
-        r -= q        
-    # assert r > -(q >> 1)
-    # assert r <= (q >> 1)
+def reduce_mod_pm(n, a):
+    """
+    Takes an integer n and represents
+    it as an integer in the range
+
+    r = n % a
+
+    for a odd:
+        -(a-1)/2 < r <= (a-1)/2
+    for a even:
+        - a / 2  < r <= a / 2
+    """
+    r = n % a
+    if r > (a >> 1):
+        r -= a
+
+    # assert r > -(a >> 1)
+    # assert r <= (a >> 1)
+    # assert (n % a) == (r % a)
     return r
 
 def decompose(r, a, q):
+    """
+    Takes an element r and represents
+    it as:
+
+    r = r1*a + r0
+
+    With r0 in the range
+
+    -(a << 1) < r0 <= (a << 1)
+    """
     r  = r % q
     r0 = reduce_mod_pm(r, a)
     r1 = r - r0
     if r1 == q - 1:
         return 0, r0 - 1
     r1 = r1 // a
-    # assert r == r1*a + r0
+    assert r == r1*a + r0
     return r1, r0
 
 def high_bits(r, a, q):
@@ -26,11 +49,25 @@ def low_bits(r, a, q):
     _, r0 = decompose(r, a, q)
     return r0
 
-def make_hint(z, r, a, q):
-    r1 = high_bits(r, a, q)
-    v1 = high_bits(r + z, a, q)        
-    return int(r1 != v1)
-    
+# def __broken_make_hint(z, r, a, q):
+#     r1 = high_bits(r, a, q)
+#     v1 = high_bits(r + z, a, q)        
+#     return int(r1 != v1)
+
+def make_hint(z0, r1, a, q):
+    """
+    The above function from the documentation
+    fails sometimes, but this seems to work...
+
+    This assumes that 
+
+    TODO: learn what the edge case is for the above function
+    """
+    gamma2 = (a >> 1)
+    if z0 <= gamma2 or z0 > (q - gamma2) or (z0 == (q - gamma2) and r1 == 0):
+        return 0
+    return 1
+
 def use_hint(h,r,a,q):
     m = (q-1) // a
     r1, r0 = decompose(r, a, q)

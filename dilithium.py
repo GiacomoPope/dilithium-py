@@ -2,7 +2,6 @@ import os
 
 from polynomials import *
 from modules import *
-from hashlib import shake_256
 from shake_wrapper import Shake128, Shake256
 from utils import *
 from ntt_helper import NTTHelperDilithium
@@ -39,8 +38,8 @@ DEFAULT_PARAMETERS = {
         "eta_bound" : 9,
         "tau" : 49,
         "omega" : 55,
-        "gamma_1" : 524288, # 2^17
-        "gamma_2" : 261888,  # (q-1)/88
+        "gamma_1" : 524288, # 2^19
+        "gamma_2" : 261888, # (q-1)/88
     },
     
     "dilithium5" : {
@@ -53,8 +52,8 @@ DEFAULT_PARAMETERS = {
         "eta_bound" : 15,
         "tau" : 60,
         "omega" : 75,
-        "gamma_1" : 524288, # 2^17
-        "gamma_2" : 261888,  # (q-1)/88
+        "gamma_1" : 524288, # 2^19
+        "gamma_2" : 261888, # (q-1)/88
     },
 }
 
@@ -108,7 +107,7 @@ class Dilithium:
             self.drgb.reseed(seed)
             
     """
-    H() used Shake256 to hash data to 32 and 64 bytes in a 
+    H() uses Shake256 to hash data to 32 and 64 bytes in a 
     few places in the code 
     """
     @staticmethod  
@@ -444,7 +443,8 @@ class Dilithium:
             kappa += self.l
             
             w  = (A @ y_hat).from_ntt()
-            w.reduce_coefficents() 
+            w.reduce_coefficents()
+
             # Extract out both the high and low bits
             w1, w0 = w.decompose(alpha)
             
@@ -456,19 +456,26 @@ class Dilithium:
             # Store c in NTT form
             c.to_ntt()
             
-            z            = y  + s1.scale(c).from_ntt()   
-            w0_minus_cs2 = w0 - s2.scale(c).from_ntt()
-            
+            z = y + s1.scale(c).from_ntt()
             if z.check_norm_bound(self.gamma_1 - self.beta):
                 continue
+
+            w0_minus_cs2 = w0 - s2.scale(c).from_ntt()
+            w0_minus_cs2.reduce_coefficents()
             if w0_minus_cs2.check_norm_bound(self.gamma_2 - self.beta):
                 continue
             
             c_t0 = t0.scale(c).from_ntt()
+            c_t0.reduce_coefficents()
+
             if c_t0.check_norm_bound(self.gamma_2):
                 continue
             
-            h = self._make_hint(c_t0.scale(-1), w0_minus_cs2 + c_t0, alpha)
+            w0_minus_cs2_plus_ct0 = w0_minus_cs2 + c_t0
+            w0_minus_cs2_plus_ct0.reduce_coefficents()
+            
+            h = self._make_hint(w0_minus_cs2_plus_ct0, w1, alpha)            
+
             if self._sum_hint(h) > self.omega:
                 continue
             

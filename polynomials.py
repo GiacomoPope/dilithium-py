@@ -243,7 +243,10 @@ class PolynomialRing:
             return self.parent(coeffs, is_ntt=is_ntt)
         
         """
-        Helper...
+        Compute the high and low bits at the same time
+        Not in the pseudocode, but needed for the more
+        efficient signing which we implement based on
+        section 5.1
         """
         def decompose(self, alpha, is_ntt=False):
             coeff_high = []
