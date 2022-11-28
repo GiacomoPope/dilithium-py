@@ -1,7 +1,7 @@
 import unittest
 import os
 from dilithium import Dilithium2, Dilithium3, Dilithium5
-from aes256_ctr_drgb import AES256_CTR_DRGB
+from aes256_ctr_drbg import AES256_CTR_DRBG
 
 def parse_kat_data(data):
     """
@@ -62,11 +62,11 @@ class TestDilithium(unittest.TestCase):
         for _ in range(5):
             self.generic_test_dilithium(Dilithium5)
             
-class TestDilithiumDRGB(unittest.TestCase):
+class TestDilithiumDRBG(unittest.TestCase):
     """
-    Ensure that deterministic DRGB is deterministic!
+    Ensure that deterministic DRBG is deterministic!
     
-    Uses AES256 CTR DRGB for randomness.
+    Uses AES256 CTR DRBG for randomness.
     Note: requires pycryptodome for AES impl.
     """
     
@@ -79,7 +79,7 @@ class TestDilithiumDRGB(unittest.TestCase):
         seed = os.urandom(48)
         pk_output = []
         for _ in range(5):
-            Dilithium.set_drgb_seed(seed)
+            Dilithium.set_drbg_seed(seed)
             pk, sk = Dilithium.keygen()
             pk_output.append(pk + sk)
         self.assertEqual(len(pk_output), 5)
@@ -95,7 +95,7 @@ class TestDilithiumDRGB(unittest.TestCase):
         msg  = b"Signed by Dilithium" + os.urandom(32)
         pk, sk = Dilithium.keygen()
         for _ in range(5):
-            Dilithium.set_drgb_seed(seed)
+            Dilithium.set_drbg_seed(seed)
             sig = Dilithium.sign(sk, msg)
             verify = Dilithium.verify(pk, msg, sig)
             # Check signature worked
@@ -118,7 +118,7 @@ class TestDilithiumDRGB(unittest.TestCase):
         for _ in range(5):
             self.generic_test_dilithium(Dilithium5)
 
-class TestKnownTestValuesDRGB(unittest.TestCase):
+class TestKnownTestValuesDRBG(unittest.TestCase):
     """
     We know how the seeds and messages for the KAT are 
     generated, so let's check against our own implementation.
@@ -126,10 +126,10 @@ class TestKnownTestValuesDRGB(unittest.TestCase):
     We only need to test one file, as the seeds are the 
     same across the three files.
     """
-    def test_known_answer_DRGB(self):
-        # Set DRGB to generate seeds
+    def test_known_answer_DRBG(self):
+        # Set DRBG to generate seeds
         entropy_input = bytes([i for i in range(48)])
-        rng = AES256_CTR_DRGB(entropy_input)
+        rng = AES256_CTR_DRBG(entropy_input)
         
         with open("assets/PQCsignKAT_Dilithium2.rsp") as f:
             # extract data from KAT
@@ -158,7 +158,7 @@ class TestKnownTestValuesDilithium(unittest.TestCase):
             pk_KAT = data["pk"]
             sk_KAT = data["sk"]
             
-            Dilithium.set_drgb_seed(seed_KAT)
+            Dilithium.set_drbg_seed(seed_KAT)
             pk, sk = Dilithium.keygen()
             # Check that the keygen matches
             self.assertEqual(pk_KAT, pk)
@@ -188,11 +188,11 @@ class TestKnownTestValuesDilithium(unittest.TestCase):
     def test_dilithium2(self):
         self.generic_test_dilithium(Dilithium2, "PQCsignKAT_Dilithium2.rsp")
         
-    def test_dilithium3(self):
-        self.generic_test_dilithium(Dilithium3, "PQCsignKAT_Dilithium3.rsp")
+    # def test_dilithium3(self):
+    #     self.generic_test_dilithium(Dilithium3, "PQCsignKAT_Dilithium3.rsp")
         
-    def test_dilithium5(self):
-        self.generic_test_dilithium(Dilithium5, "PQCsignKAT_Dilithium5.rsp")
+    # def test_dilithium5(self):
+    #     self.generic_test_dilithium(Dilithium5, "PQCsignKAT_Dilithium5.rsp")
     
 if __name__ == '__main__':
     unittest.main()

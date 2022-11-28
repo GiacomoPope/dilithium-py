@@ -7,9 +7,9 @@ from utils import *
 from ntt_helper import NTTHelperDilithium
 
 try:
-    from aes256_ctr_drgb import AES256_CTR_DRGB
+    from aes256_ctr_drbg import AES256_CTR_DRBG
 except ImportError as e:
-    print("Error importing AES256 CTR DRGB. Have you tried installing requirements?")
+    print("Error importing AES256 CTR DRBG. Have you tried installing requirements?")
     print(f"ImportError: {e}\n")
     print("Dilithium will work perfectly fine with system randomness")
     
@@ -75,7 +75,7 @@ class Dilithium:
         self.R = PolynomialRing(self.q, self.n, ntt_helper=NTTHelperDilithium)
         self.M = Module(self.R)
         
-        self.drgb = None
+        self.drbg = None
         self.random_bytes = os.urandom
     
     """
@@ -83,28 +83,28 @@ class Dilithium:
     randomness throughout all of Dilithium. This is helpful
     for the KAT tests more than anything!
     """
-    def set_drgb_seed(self, seed):
+    def set_drbg_seed(self, seed):
         """
         Setting the seed switches the entropy source
-        from os.urandom to AES256 CTR DRGB
+        from os.urandom to AES256 CTR DRBG
             
         Note: requires pycryptodome for AES impl.
         (Seemed overkill to code my own AES for Kyber)
         """
-        self.drgb = AES256_CTR_DRGB(seed)
-        self.random_bytes = self.drgb.random_bytes
+        self.drbg = AES256_CTR_DRBG(seed)
+        self.random_bytes = self.drbg.random_bytes
         
-    def reseed_drgb(self, seed):
+    def reseed_drbg(self, seed):
         """
-        Reseeds the DRGB, errors if a DRGB is not set.
+        Reseeds the DRBG, errors if a DRBG is not set.
         
         Note: requires pycryptodome for AES impl.
         (Seemed overkill to code my own AES for Kyber)
         """
-        if self.drgb is None:
-            raise Warning(f"Cannot reseed DRGB without first initialising. Try using `set_drgb_seed`")
+        if self.drbg is None:
+            raise Warning(f"Cannot reseed DRBG without first initialising. Try using `set_drbg_seed`")
         else:
-            self.drgb.reseed(seed)
+            self.drbg.reseed(seed)
             
     """
     H() uses Shake256 to hash data to 32 and 64 bytes in a 
@@ -443,7 +443,6 @@ class Dilithium:
             kappa += self.l
             
             w  = (A @ y_hat).from_ntt()
-            w.reduce_coefficents()
 
             # Extract out both the high and low bits
             w1, w0 = w.decompose(alpha)
@@ -461,18 +460,16 @@ class Dilithium:
                 continue
 
             w0_minus_cs2 = w0 - s2.scale(c).from_ntt()
-            w0_minus_cs2.reduce_coefficents()
             if w0_minus_cs2.check_norm_bound(self.gamma_2 - self.beta):
                 continue
             
             c_t0 = t0.scale(c).from_ntt()
-            c_t0.reduce_coefficents()
+            # c_t0.reduce_coefficents()
 
             if c_t0.check_norm_bound(self.gamma_2):
                 continue
             
             w0_minus_cs2_plus_ct0 = w0_minus_cs2 + c_t0
-            w0_minus_cs2_plus_ct0.reduce_coefficents()
             
             h = self._make_hint(w0_minus_cs2_plus_ct0, w1, alpha)            
 

@@ -48,7 +48,7 @@ for version 3.1. These are the files inside [assets](assets/).
 Originally, as with `kyber-py`, this project was planned to have zero
 dependencies, however like `kyber-py`, to pass the KATs, I need  a 
 deterministic CSRNG. The reference implementation uses
-AES256 CTR DRGB. I have implemented this in [`ase256_ctr_drgb.py`](ase256_ctr_drgb.py). 
+AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](ase256_ctr_drbg.py). 
 However, I have not implemented AES itself, instead I import this from `pycryptodome`.
 
 To install dependencies, run `pip -r install requirements`.
@@ -112,7 +112,7 @@ All times recorded using a Intel Core i7-9750H CPU.
 * **First plan**: Add documentation to the code
 * Add examples for each of the functions
 * Add documentation on how each of the components works
-* Add documentation for working with DRGB and setting the seed
+* Add documentation for working with DRBG and setting the seed
 
 ## Discussion of Implementation
 
@@ -316,7 +316,7 @@ TODO
 TODO
 ```
 
-### AES256-CTR-DRGB
+### AES256-CTR-DRBG
 
 ```
 TODO
