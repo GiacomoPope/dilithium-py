@@ -149,12 +149,12 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 The file [`modules.py`](modules.py) contains the classes `Module` and `Matrix`.
 A module is a generalisation of a vector space, where the field
-of scalars is replaced with a ring. In the case of Kyber, we 
+of scalars is replaced with a ring. In the case of Dilithium, we 
 need the module with the ring $R_q$ as described above. 
 
 `Matrix` allows elements of the module to be of size $m \times n$
-but for Kyber, we only need vectors of length $k$ and square
-matricies of size $k \times k$.
+For Dilithium, we need vectors of length $k$ and $l$ and a matrix
+of size $l \times k$. 
 
 As an example of the operations we can perform with out `Module`
 lets revisit the ring from the previous example:
@@ -199,42 +199,6 @@ lets revisit the ring from the previous example:
 >>> A @ v
 [8 + 4*x + 3*x^6 + 9*x^7]
 [        2 + 6*x^4 + x^5]
-```
-
-We also carry through `Matrix.encode()` and 
-`Module.decode(bytes, n_rows, n_cols)` 
-which simply use the above functions defined for polynomials and run for each
-element.
-
-#### Example
-
-We can see how encoding / decoding a vector works in the following example.
-Note that we can swap the rows/columns to decode bytes into the transpose
-when working with a vector.
-
-```python
->>> R = PolynomialRing(11, 8)
->>> M = Module(R)
->>> v = M([R.random_element() for _ in range(2)])
->>> v_bytes = v.encode()
->>> v_bytes.hex()
-'d'
->>> M.decode(v_bytes, 1, 2) == v
-True
->>> v_bytes = v.encode(l=10)
->>> v_bytes.hex()
-'a014020100103004000040240a03009030080200'
->>> M.decode(v_bytes, 1, 2, l=10) == v
-True
->>> M.decode(v_bytes, 2, 1, l=10) == v.transpose()
-True
->>> # We can also compress and decompress elements of the module
->>> v
-[5 + 10*x + 4*x^2 + 2*x^3 + 8*x^4 + 3*x^5 + 2*x^6, 2 + 9*x + 5*x^2 + 3*x^3 + 9*x^4 + 3*x^5 + x^6 + x^7]
->>> v.compress(1)
-[1 + x^2 + x^4 + x^5, x^2 + x^3 + x^5]
->>> v.decompress(1)
-[6 + 6*x^2 + 6*x^4 + 6*x^5, 6*x^2 + 6*x^3 + 6*x^5]
 ```
 
 ### Number Theoretic Transform
