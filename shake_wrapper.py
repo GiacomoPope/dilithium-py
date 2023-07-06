@@ -49,7 +49,8 @@ class Shake():
         self.read_data = xof_data[-self.block_length*n:]
     
     def read(self, n):
-        if not self.read_data:
+        # Make sure there are enough bytes to read
+        if n > len(self.read_data):
             self.get_n_blocks(5*n)
         send = self.read_data[:n]
         self.read_data = self.read_data[n:]
