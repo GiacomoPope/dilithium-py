@@ -1,10 +1,9 @@
 import os
 
-from polynomials.polynomials import PolynomialRing
-from modules.modules import Module
+from polynomials.polynomials import PolynomialRingDilithium
+from modules.modules import ModuleDilithium
 from shake.shake_wrapper import Shake128, Shake256
 from utilities.utils import make_hint, use_hint
-from polynomials.ntt_helper import NTTHelperDilithium
 
 try:
     from drbg.aes256_ctr_drbg import AES256_CTR_DRBG
@@ -31,8 +30,8 @@ class Dilithium:
         self.gamma_2 = parameter_set["gamma_2"]
         self.beta = self.tau * self.eta
 
-        self.R = PolynomialRing(self.q, self.n, ntt_helper=NTTHelperDilithium)
-        self.M = Module(self.R)
+        self.R = PolynomialRingDilithium()
+        self.M = ModuleDilithium()
 
         self.drbg = None
         self.random_bytes = os.urandom
@@ -95,9 +94,9 @@ class Dilithium:
         matrix = [
             [
                 self._make_hint_poly(p1, p2, alpha)
-                for p1, p2 in zip(v1.rows[i], v2.rows[i])
+                for p1, p2 in zip(v1._data[i], v2._data[i])
             ]
-            for i in range(v1.m)
+            for i in range(len(v1._data))
         ]
         return self.M(matrix)
 
@@ -105,9 +104,9 @@ class Dilithium:
         matrix = [
             [
                 self._use_hint_poly(p1, p2, alpha)
-                for p1, p2 in zip(v1.rows[i], v2.rows[i])
+                for p1, p2 in zip(v1._data[i], v2._data[i])
             ]
-            for i in range(v1.m)
+            for i in range(len(v1._data))
         ]
         return self.M(matrix)
 
@@ -118,7 +117,7 @@ class Dilithium:
         ]
         return self.R(coeffs)
 
-    def _use_hint_poly(self, p1, p2, alpha, is_ntt=False):
+    def _use_hint_poly(self, p1, p2, alpha):
         coeffs = [
             use_hint(h, r, alpha, self.q) for h, r in zip(p1.coeffs, p2.coeffs)
         ]
@@ -130,9 +129,9 @@ class Dilithium:
         Helper function to count the number of coeffs == 1
         in all the polynomials of a matrix
         """
-        return sum(c for row in hint.rows for p in row for c in p)
+        return sum(c for row in hint._data for p in row for c in p)
 
-    def _sample_in_ball(self, seed, is_ntt=False):
+    def _sample_in_ball(self, seed):
         """
         Figure 2 (Sample in Ball)
             https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
@@ -172,7 +171,7 @@ class Dilithium:
             coeffs[j] = 1 - 2 * (sign_int & 1)
             sign_int >>= 1
 
-        return self.R(coeffs, is_ntt=is_ntt)
+        return self.R(coeffs)
 
     def _sample_error_polynomial(self, rho_prime, i, is_ntt=False):
         def rejection_sample(xof):
@@ -280,13 +279,12 @@ class Dilithium:
         ]
         return self.M(matrix)
 
-    def _expandS(self, rho_prime, is_ntt=False):
+    def _expandS(self, rho_prime):
         s1_elements = [
-            self._sample_error_polynomial(rho_prime, i, is_ntt=is_ntt)
-            for i in range(self.l)
+            self._sample_error_polynomial(rho_prime, i) for i in range(self.l)
         ]
         s2_elements = [
-            self._sample_error_polynomial(rho_prime, i, is_ntt=is_ntt)
+            self._sample_error_polynomial(rho_prime, i)
             for i in range(self.l, self.l + self.k)
         ]
 
@@ -294,9 +292,9 @@ class Dilithium:
         s2 = self.M(s2_elements).transpose()
         return s1, s2
 
-    def _expandMask(self, rho_prime, kappa, is_ntt=False):
+    def _expandMask(self, rho_prime, kappa):
         elements = [
-            self._sample_mask_polynomial(rho_prime, i, kappa, is_ntt=is_ntt)
+            self._sample_mask_polynomial(rho_prime, i, kappa)
             for i in range(self.l)
         ]
         return self.M(elements).transpose()
@@ -314,7 +312,7 @@ class Dilithium:
     def _pack_h(self, h):
         non_zero_positions = [
             [i for i, c in enumerate(poly.coeffs) if c == 1]
-            for row in h.rows
+            for row in h._data
             for poly in row
         ]
         packed = []
@@ -406,7 +404,7 @@ class Dilithium:
 
         # Generate the error vectors s1 ∈ R^l, s2 ∈ R^k
         s1, s2 = self._expandS(rho_prime)
-        s1_hat = s1.copy_to_ntt()
+        s1_hat = s1.to_ntt()
 
         # Matrix multiplication
         t = (A @ s1_hat).from_ntt() + s2
@@ -433,14 +431,14 @@ class Dilithium:
         rho_prime = self._h(K + mu, 64)
 
         # Precompute NTT representation
-        s1.to_ntt()
-        s2.to_ntt()
-        t0.to_ntt()
+        s1 = s1.to_ntt()
+        s2 = s2.to_ntt()
+        t0 = t0.to_ntt()
 
         alpha = self.gamma_2 << 1
         while True:
             y = self._expandMask(rho_prime, kappa)
-            y_hat = y.copy_to_ntt()
+            y_hat = y.to_ntt()
 
             # increment the nonce
             kappa += self.l
@@ -456,9 +454,9 @@ class Dilithium:
             c = self._sample_in_ball(c_tilde)
 
             # Store c in NTT form
-            c.to_ntt()
+            c = c.to_ntt()
 
-            z = y + s1.scale(c).from_ntt()
+            z = y + (s1.scale(c)).from_ntt()
             if z.check_norm_bound(self.gamma_1 - self.beta):
                 continue
 
@@ -467,15 +465,12 @@ class Dilithium:
                 continue
 
             c_t0 = t0.scale(c).from_ntt()
-            # c_t0.reduce_coefficents()
-
             if c_t0.check_norm_bound(self.gamma_2):
                 continue
 
             w0_minus_cs2_plus_ct0 = w0_minus_cs2 + c_t0
 
             h = self._make_hint(w0_minus_cs2_plus_ct0, w1, alpha)
-
             if self._sum_hint(h) > self.omega:
                 continue
 
@@ -498,14 +493,14 @@ class Dilithium:
         c = self._sample_in_ball(c_tilde)
 
         # Convert to NTT for computation
-        c.to_ntt()
-        z.to_ntt()
+        c = c.to_ntt()
+        z = z.to_ntt()
 
         t1 = t1.scale(1 << self.d)
-        t1.to_ntt()
+        t1 = t1.to_ntt()
 
         Az_minus_ct1 = (A @ z) - t1.scale(c)
-        Az_minus_ct1.from_ntt()
+        Az_minus_ct1 = Az_minus_ct1.from_ntt()
 
         w_prime = self._use_hint(h, Az_minus_ct1, 2 * self.gamma_2)
         w_prime_bytes = w_prime.bit_pack_w(self.gamma_2)

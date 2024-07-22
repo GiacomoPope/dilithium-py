@@ -100,25 +100,18 @@ Some very rough benchmarks to give an idea about performance:
 
 |  500 Iterations          | `Dilithium2` | `Dilithium3` | `Dilithium5` |
 |--------------------------|--------------|--------------|--------------|
-| `KeyGen()` Median Time   |  0.014s      | 0.022s       | 0.033s       |
-| `Sign()`   Median Time   |  0.073s      | 0.113s       | 0.143s       |
-| `Sign()`   Average Time  |  0.092s      | 0.143s       | 0.175s       |
-| `Verify()` Median Time   |  0.017s      | 0.025s       | 0.039s       |
+| `KeyGen()` Median Time   |  7 ms        | 12 ms        | 19 ms        |
+| `Sign()`   Median Time   |  30 ms       | 43 ms        | 64 ms        |
+| `Sign()`   Average Time  |  39 ms       | 58 ms        | 76 ms        |
+| `Verify()` Median Time   |  8 s         | 13 ms        | 21 ms        |
 
-All times recorded using a Intel Core i7-9750H CPU. 
-
-## Future Plans
-
-* **First plan**: Add documentation to the code
-* Add examples for each of the functions
-* Add documentation on how each of the components works
-* Add documentation for working with DRBG and setting the seed
+All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
 
 ## Discussion of Implementation
 
 ### Polynomials
 
-The file [`polynomials.py`](polynomials.py) contains the classes 
+The file [`polynomials.py`](polynomials/polynomials_generic.py) contains the classes 
 `PolynomialRing` and 
 `Polynomial`. This implements the univariate polynomial ring
 
@@ -147,7 +140,7 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 ### Modules
 
-The file [`modules.py`](modules.py) contains the classes `Module` and `Matrix`.
+The file [`modules.py`](modules/modules_generic.py) contains the classes `Module` and `Matrix`.
 A module is a generalisation of a vector space, where the field
 of scalars is replaced with a ring. In the case of Dilithium, we 
 need the module with the ring $R_q$ as described above. 
@@ -266,22 +259,4 @@ we expect a similar 100x speed up when working in NTT form:
 >>> v = v.to_ntt()
 >>> timeit.timeit("u@v", globals=globals(), number=1000)
 0.495470915993792
-```
-
-### Bit Packing
-
-```
-TODO
-```
-
-### Random Sampling
-
-```
-TODO
-```
-
-### AES256-CTR-DRBG
-
-```
-TODO
 ```

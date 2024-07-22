@@ -85,7 +85,7 @@ class AES256_CTR_DRBG:
         else:
             if len(additional) > self.seed_length:
                 raise ValueError(
-                    f"The additional input must be of length at most: {self.seed_length}. Input has length {len(seed)}"
+                    f"The additional input must be of length at most: {self.seed_length}. Input has length {len(additional)}"
                 )
             elif len(additional) < self.seed_length:
                 additional += bytes([0]) * (self.seed_length - len(additional))

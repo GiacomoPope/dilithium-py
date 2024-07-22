@@ -58,7 +58,7 @@ def benchmark_dilithium(Dilithium, name, count):
 if __name__ == "__main__":
     # I used 500 calls for the README, but you might want to
     # shrink this down if you're playing
-    count = 10
+    count = 1000
     benchmark_dilithium(Dilithium2, "Dilithium2", count)
     benchmark_dilithium(Dilithium3, "Dilithium3", count)
     benchmark_dilithium(Dilithium5, "Dilithium5", count)

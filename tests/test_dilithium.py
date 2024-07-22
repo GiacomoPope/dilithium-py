@@ -16,7 +16,7 @@ def parse_kat_data(data):
         count, seed, mlen, msg, pk, sk, smlen, sm = [
             line.split(" = ")[-1] for line in block_data
         ]
-        parsed_data[count] = {
+        parsed_data[int(count)] = {
             "seed": bytes.fromhex(seed),
             "msg": bytes.fromhex(msg),
             "mlen": int(mlen),
@@ -124,57 +124,35 @@ class TestDilithiumDRBG(unittest.TestCase):
             self.generic_test_dilithium(Dilithium5)
 
 
-class TestKnownTestValuesDRBG(unittest.TestCase):
-    """
-    We know how the seeds and messages for the KAT are
-    generated, so let's check against our own implementation.
-
-    We only need to test one file, as the seeds are the
-    same across the three files.
-    """
-
-    def test_known_answer_DRBG(self):
-        # Set DRBG to generate seeds
-        entropy_input = bytes([i for i in range(48)])
-        rng = AES256_CTR_DRBG(entropy_input)
-
-        with open("assets/PQCsignKAT_Dilithium2.rsp") as f:
-            # extract data from KAT
-            kat_data = f.read()
-            parsed_data = parse_kat_data(kat_data)
-        # Check all seeds match
-        for data in parsed_data.values():
-            seed = data["seed"]
-            seed_check = rng.random_bytes(48)
-            msg_len = data["mlen"]
-            msg = data["msg"]
-            msg_check = rng.random_bytes(msg_len)
-            self.assertEqual(seed, seed_check)
-            self.assertEqual(msg, msg_check)
-
-
 class TestKnownTestValuesDilithium(unittest.TestCase):
     def generic_test_dilithium(self, Dilithium, file_name):
+
+        entropy_input = bytes([i for i in range(48)])
+        drbg = AES256_CTR_DRBG(entropy_input)
+
         with open(f"assets/{file_name}") as f:
             # extract data from KAT
             kat_data = f.read()
             parsed_data = parse_kat_data(kat_data)
 
-        failure = 0
-        for data in parsed_data.values():
-            seed_KAT = data["seed"]
-            pk_KAT = data["pk"]
-            sk_KAT = data["sk"]
+        for count in range(100):
+            data = parsed_data[count]
 
-            Dilithium.set_drbg_seed(seed_KAT)
+            seed = drbg.random_bytes(48)
+            self.assertEqual(data["seed"], seed)
+
+            msg_len = data["mlen"]
+            msg = drbg.random_bytes(msg_len)
+            self.assertEqual(data["msg"], msg)
+
+            Dilithium.set_drbg_seed(seed)
             pk, sk = Dilithium.keygen()
+
             # Check that the keygen matches
-            self.assertEqual(pk_KAT, pk)
-            self.assertEqual(sk_KAT, sk)
+            self.assertEqual(data["pk"], pk)
+            self.assertEqual(data["sk"], sk)
 
             # Check that the signature matches
-            msg = data["msg"]
-            msg_len = data["mlen"]
             sm_KAT = data["sm"]
             sig_KAT = sm_KAT[:-msg_len]
 
@@ -194,11 +172,11 @@ class TestKnownTestValuesDilithium(unittest.TestCase):
     def test_dilithium2(self):
         self.generic_test_dilithium(Dilithium2, "PQCsignKAT_Dilithium2.rsp")
 
-    # def test_dilithium3(self):
-    #     self.generic_test_dilithium(Dilithium3, "PQCsignKAT_Dilithium3.rsp")
+    def test_dilithium3(self):
+        self.generic_test_dilithium(Dilithium3, "PQCsignKAT_Dilithium3.rsp")
 
-    # def test_dilithium5(self):
-    #     self.generic_test_dilithium(Dilithium5, "PQCsignKAT_Dilithium5.rsp")
+    def test_dilithium5(self):
+        self.generic_test_dilithium(Dilithium5, "PQCsignKAT_Dilithium5.rsp")
 
 
 if __name__ == "__main__":
