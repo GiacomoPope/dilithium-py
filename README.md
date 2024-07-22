@@ -103,7 +103,7 @@ Some very rough benchmarks to give an idea about performance:
 | `KeyGen()` Median Time   |  7 ms        | 12 ms        | 19 ms        |
 | `Sign()`   Median Time   |  30 ms       | 43 ms        | 64 ms        |
 | `Sign()`   Average Time  |  39 ms       | 58 ms        | 76 ms        |
-| `Verify()` Median Time   |  8 s         | 13 ms        | 21 ms        |
+| `Verify()` Median Time   |  8 ms        | 13 ms        | 21 ms        |
 
 All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
 

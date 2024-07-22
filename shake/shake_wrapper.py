@@ -1,18 +1,15 @@
 from hashlib import shake_128, shake_256
 
 """
-hashlib has implemented shake_128, shake_256
-but they haven't designed it so you can read
-bytes properly... every call generates all
-bytes without updating
+hashlib has implemented shake_128, shake_256 but they haven't designed it so you
+can read bytes properly... every call generates all bytes without updating
 
 shake_128.digest(1) == shake_128.digest(1)
 
 and we have no shake_128.read() :(
 
-So, here's a wrapper which calls to 
-shake_128.digest and collects a bunch of bytes
-which we can then read through.
+So, here's a wrapper which calls to shake_128.digest and collects a bunch of
+bytes which we can then read through.
 """
 
 
