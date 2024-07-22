@@ -1,61 +1,19 @@
 import os
 
-from polynomials import *
-from modules import *
-from shake_wrapper import Shake128, Shake256
-from utils import *
-from ntt_helper import NTTHelperDilithium
+from polynomials.polynomials import PolynomialRing
+from modules.modules import Module
+from shake.shake_wrapper import Shake128, Shake256
+from utilities.utils import make_hint, use_hint
+from polynomials.ntt_helper import NTTHelperDilithium
 
 try:
-    from aes256_ctr_drbg import AES256_CTR_DRBG
+    from drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 except ImportError as e:
     print(
         "Error importing AES256 CTR DRBG. Have you tried installing requirements?"
     )
     print(f"ImportError: {e}\n")
     print("Dilithium will work perfectly fine with system randomness")
-
-DEFAULT_PARAMETERS = {
-    "dilithium2": {
-        "n": 256,
-        "q": 8380417,
-        "d": 13,
-        "k": 4,
-        "l": 4,
-        "eta": 2,
-        "eta_bound": 15,
-        "tau": 39,
-        "omega": 80,
-        "gamma_1": 131072,  # 2^17
-        "gamma_2": 95232,  # (q-1)/88
-    },
-    "dilithium3": {
-        "n": 256,
-        "q": 8380417,
-        "d": 13,
-        "k": 6,
-        "l": 5,
-        "eta": 4,
-        "eta_bound": 9,
-        "tau": 49,
-        "omega": 55,
-        "gamma_1": 524288,  # 2^19
-        "gamma_2": 261888,  # (q-1)/88
-    },
-    "dilithium5": {
-        "n": 256,
-        "q": 8380417,
-        "d": 13,
-        "k": 8,
-        "l": 7,
-        "eta": 2,
-        "eta_bound": 15,
-        "tau": 60,
-        "omega": 75,
-        "gamma_1": 524288,  # 2^19
-        "gamma_2": 261888,  # (q-1)/88
-    },
-}
 
 
 class Dilithium:
@@ -105,7 +63,7 @@ class Dilithium:
         """
         if self.drbg is None:
             raise Warning(
-                f"Cannot reseed DRBG without first initialising. Try using `set_drbg_seed`"
+                "Cannot reseed DRBG without first initialising. Try using `set_drbg_seed`"
             )
         else:
             self.drbg.reseed(seed)
@@ -124,8 +82,8 @@ class Dilithium:
 
     """
     Figure 3 (Supporting algorithms for Dilithium)
-    `_make_hint/_use_hint` is applied to matricies and `_make_hint_poly/_use_hint_poly` 
-    applies to the polynomials, which are elements of the matricies. 
+    `_make_hint/_use_hint` is applied to matrices and `_make_hint_poly/_use_hint_poly` 
+    applies to the polynomials, which are elements of the matrices. 
     
     `_make_hint_poly/_use_hint_poly` uses the util functions `use_hint/make_hint` 
     which works on field elements (see utils.py)
@@ -553,8 +511,3 @@ class Dilithium:
         w_prime_bytes = w_prime.bit_pack_w(self.gamma_2)
 
         return c_tilde == self._h(mu + w_prime_bytes, 32)
-
-
-Dilithium2 = Dilithium(DEFAULT_PARAMETERS["dilithium2"])
-Dilithium3 = Dilithium(DEFAULT_PARAMETERS["dilithium3"])
-Dilithium5 = Dilithium(DEFAULT_PARAMETERS["dilithium5"])

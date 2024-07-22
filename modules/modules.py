@@ -88,7 +88,7 @@ class Module:
     def __call__(self, matrix_elements):
         if not isinstance(matrix_elements, list):
             raise TypeError(
-                f"Elements of a module are matrices, with elements ."
+                "Elements of a module are matrices, with elements ."
             )
 
         if isinstance(matrix_elements[0], list):
@@ -112,7 +112,7 @@ class Module:
 
         else:
             raise TypeError(
-                f"Elements of a module are matrices, built from elements of the base ring."
+                "Elements of a module are matrices, built from elements of the base ring."
             )
 
     class Matrix:

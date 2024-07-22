@@ -1,6 +1,12 @@
 import random
 from copy import deepcopy
-from utils import *
+from utilities.utils import (
+    reduce_mod_pm,
+    high_bits,
+    low_bits,
+    decompose,
+    check_norm_bound,
+)
 
 
 class PolynomialRing:
