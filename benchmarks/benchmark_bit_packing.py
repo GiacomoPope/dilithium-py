@@ -17,15 +17,9 @@ def bit_pack_t1_old(coeffs):
     lim = 256 // 4
     for i in range(lim):
         packed_bytes.append((coeffs[4 * i + 0] >> 0) % 256)
-        packed_bytes.append(
-            ((coeffs[4 * i + 0] >> 8) | (coeffs[4 * i + 1] << 2)) % 256
-        )
-        packed_bytes.append(
-            ((coeffs[4 * i + 1] >> 6) | (coeffs[4 * i + 2] << 4)) % 256
-        )
-        packed_bytes.append(
-            ((coeffs[4 * i + 2] >> 4) | (coeffs[4 * i + 3] << 6)) % 256
-        )
+        packed_bytes.append(((coeffs[4 * i + 0] >> 8) | (coeffs[4 * i + 1] << 2)) % 256)
+        packed_bytes.append(((coeffs[4 * i + 1] >> 6) | (coeffs[4 * i + 2] << 4)) % 256)
+        packed_bytes.append(((coeffs[4 * i + 2] >> 4) | (coeffs[4 * i + 3] << 6)) % 256)
         packed_bytes.append((coeffs[4 * i + 3] >> 2) % 256)
     return bytes(packed_bytes)
 

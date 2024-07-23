@@ -68,9 +68,7 @@ class PolynomialRingDilithium(PolynomialRing):
         elif gamma_2 == 261888:
             coefficients = self.__bit_unpack(input_bytes, 4)
         else:
-            raise ValueError(
-                "Expected gamma_2 to be either (q-1)/88 or (q-1)/32"
-            )
+            raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
         return self(coefficients)
 
     def bit_unpack_z(self, input_bytes, gamma_1):
@@ -176,9 +174,7 @@ class PolynomialDilithium(Polynomial):
         Returns true if the inf norm of any coeff
         is greater or equal to the bound.
         """
-        return any(
-            check_norm_bound(c, bound, self.parent.q) for c in self.coeffs
-        )
+        return any(check_norm_bound(c, bound, self.parent.q) for c in self.coeffs)
 
     """
     The following bit_pack functions are specific for Dilithium
@@ -222,9 +218,7 @@ class PolynomialDilithium(Polynomial):
         elif gamma_2 == 261888:
             return self.__bit_pack(self.coeffs, 4, 128)
         else:
-            raise ValueError(
-                "Expected gamma_2 to be either (q-1)/88 or (q-1)/32"
-            )
+            raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
 
     def bit_pack_z(self, gamma_1):
         altered_coeffs = [self.sub_mod_q(gamma_1, c) for c in self.coeffs]
@@ -282,9 +276,7 @@ class PolynomialDilithiumNTT(PolynomialDilithium):
         if not isinstance(other, type(self)):
             raise ValueError
 
-        new_coeffs = self.ntt_coefficient_multiplication(
-            self.coeffs, other.coeffs
-        )
+        new_coeffs = self.ntt_coefficient_multiplication(self.coeffs, other.coeffs)
         return new_coeffs
 
     def __add__(self, other):

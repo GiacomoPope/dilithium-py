@@ -13,8 +13,7 @@ class ModuleDilithium(Module):
             for i in range(0, len(input_bytes), packed_len)
         ]
         matrix = [
-            [alg(poly_bytes[n * i + j], *args) for j in range(n)]
-            for i in range(m)
+            [alg(poly_bytes[n * i + j], *args) for j in range(n)] for i in range(m)
         ]
         return self(matrix)
 
@@ -48,13 +47,9 @@ class ModuleDilithium(Module):
         elif gamma_2 == 261888:
             packed_len = 128
         else:
-            raise ValueError(
-                "Expected gamma_2 to be either (q-1)/88 or (q-1)/32"
-            )
+            raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
         algorithm = self.ring.bit_unpack_w
-        return self.__bit_unpack(
-            input_bytes, m, n, algorithm, packed_len, gamma_2
-        )
+        return self.__bit_unpack(input_bytes, m, n, algorithm, packed_len, gamma_2)
 
     def bit_unpack_z(self, input_bytes, m, n, gamma_1):
         # Level 2 parameter set
@@ -66,9 +61,7 @@ class ModuleDilithium(Module):
         else:
             raise ValueError("Expected gamma_1 to be either 2^17 or 2^19")
         algorithm = self.ring.bit_unpack_z
-        return self.__bit_unpack(
-            input_bytes, m, n, algorithm, packed_len, gamma_1
-        )
+        return self.__bit_unpack(input_bytes, m, n, algorithm, packed_len, gamma_1)
 
 
 class MatrixDilithium(Matrix):
@@ -101,9 +94,9 @@ class MatrixDilithium(Matrix):
                 m1_elements[i][j] = m1_ele
                 m0_elements[i][j] = m0_ele
 
-        return self.parent(
-            m1_elements, transpose=self._transpose
-        ), self.parent(m0_elements, transpose=self._transpose)
+        return self.parent(m1_elements, transpose=self._transpose), self.parent(
+            m0_elements, transpose=self._transpose
+        )
 
     def decompose(self, alpha):
         """
@@ -121,14 +114,12 @@ class MatrixDilithium(Matrix):
                 m1_elements[i][j] = m1_ele
                 m0_elements[i][j] = m0_ele
 
-        return self.parent(
-            m1_elements, transpose=self._transpose
-        ), self.parent(m0_elements, transpose=self._transpose)
+        return self.parent(m1_elements, transpose=self._transpose), self.parent(
+            m0_elements, transpose=self._transpose
+        )
 
     def __bit_pack(self, algorithm, *args):
-        return b"".join(
-            algorithm(poly, *args) for row in self._data for poly in row
-        )
+        return b"".join(algorithm(poly, *args) for row in self._data for poly in row)
 
     def bit_pack_t1(self):
         algorithm = self.parent.ring.element.bit_pack_t1
@@ -160,14 +151,12 @@ class MatrixDilithium(Matrix):
 
     def high_bits(self, alpha, is_ntt=False):
         matrix = [
-            [ele.high_bits(alpha, is_ntt=is_ntt) for ele in row]
-            for row in self._data
+            [ele.high_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data
         ]
         return self.parent(matrix)
 
     def low_bits(self, alpha, is_ntt=False):
         matrix = [
-            [ele.low_bits(alpha, is_ntt=is_ntt) for ele in row]
-            for row in self._data
+            [ele.low_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data
         ]
         return self.parent(matrix)

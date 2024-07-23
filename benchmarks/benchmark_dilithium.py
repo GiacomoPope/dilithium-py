@@ -14,9 +14,7 @@ def profile_dilithium(Dilithium):
     lvars = {"Dilithium": Dilithium, "m": m, "pk": pk, "sk": sk, "sig": sig}
 
     # cProfile.runctx("Dilithium.keygen()", globals=gvars, locals=lvars, sort=1)
-    cProfile.runctx(
-        "Dilithium.sign(sk, m)", globals=gvars, locals=lvars, sort=1
-    )
+    cProfile.runctx("Dilithium.sign(sk, m)", globals=gvars, locals=lvars, sort=1)
     # cProfile.runctx("Dilithium.verify(pk, m, sig)", globals=gvars, locals=lvars, sort=1)
 
 

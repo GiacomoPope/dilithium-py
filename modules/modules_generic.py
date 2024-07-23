@@ -17,18 +17,14 @@ class Module:
 
         if isinstance(matrix_elements[0], list):
             for element_list in matrix_elements:
-                if not all(
-                    isinstance(aij, self.ring.element) for aij in element_list
-                ):
+                if not all(isinstance(aij, self.ring.element) for aij in element_list):
                     raise TypeError(
                         f"All elements of the matrix must be elements of the ring: {self.ring}"
                     )
             return self.matrix(self, matrix_elements, transpose=transpose)
 
         elif isinstance(matrix_elements[0], self.ring.element):
-            if not all(
-                isinstance(aij, self.ring.element) for aij in matrix_elements
-            ):
+            if not all(isinstance(aij, self.ring.element) for aij in matrix_elements):
                 raise TypeError(
                     f"All elements of the matrix must be elements of the ring: {self.ring}"
                 )
@@ -98,9 +94,7 @@ class Matrix:
         """
         matrix[i, j] returns the element on row i, column j
         """
-        assert (
-            isinstance(idx, tuple) and len(idx) == 2
-        ), "Can't access individual rows"
+        assert isinstance(idx, tuple) and len(idx) == 2, "Can't access individual rows"
         if not self._transpose:
             return self._data[idx[0]][idx[1]]
         else:
@@ -110,9 +104,7 @@ class Matrix:
         if self.dim() != other.dim():
             return False
         m, n = self.dim()
-        return all(
-            [self[i, j] == other[i, j] for i in range(m) for j in range(n)]
-        )
+        return all([self[i, j] == other[i, j] for i in range(m) for j in range(n)])
 
     def __add__(self, other):
         if not isinstance(other, type(self)):
@@ -172,10 +164,7 @@ class Matrix:
 
         return self.parent(
             [
-                [
-                    sum(self[i, k] * other[k, j] for k in range(n))
-                    for j in range(l)
-                ]
+                [sum(self[i, k] * other[k, j] for k in range(n)) for j in range(l)]
                 for i in range(m)
             ]
         )
@@ -184,13 +173,8 @@ class Matrix:
         """
         Multiply each element of the matrix by a polynomial or integer
         """
-        if not (
-            isinstance(other, self.parent.ring.element)
-            or isinstance(other, int)
-        ):
-            raise TypeError(
-                "Can only multiply elements with polynomials or integers"
-            )
+        if not (isinstance(other, self.parent.ring.element) or isinstance(other, int)):
+            raise TypeError("Can only multiply elements with polynomials or integers")
 
         matrix = [[other * ele for ele in row] for row in self._data]
         return self.parent(matrix, transpose=self._transpose)
@@ -211,17 +195,10 @@ class Matrix:
         if m == 1:
             return str(self._data[0])
 
-        max_col_width = [
-            max(len(str(self[i, j])) for i in range(m)) for j in range(n)
-        ]
+        max_col_width = [max(len(str(self[i, j])) for i in range(m)) for j in range(n)]
         info = "]\n[".join(
             [
-                ", ".join(
-                    [
-                        f"{str(self[i, j]):>{max_col_width[j]}}"
-                        for j in range(n)
-                    ]
-                )
+                ", ".join([f"{str(self[i, j]):>{max_col_width[j]}}" for j in range(n)])
                 for i in range(m)
             ]
         )

@@ -38,9 +38,7 @@ class AES256_CTR_DRBG:
                 f"The Personalization String must be at most length: {self.seed_length}. Input has length {len(personalization)}"
             )
         elif len(personalization) < self.seed_length:
-            personalization += bytes([0]) * (
-                self.seed_length - len(personalization)
-            )
+            personalization += bytes([0]) * (self.seed_length - len(personalization))
         # debugging
         assert len(personalization) == self.seed_length
         return xor_bytes(self.entropy_input, personalization)

@@ -8,9 +8,7 @@ from utilities.utils import make_hint, use_hint
 try:
     from drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 except ImportError as e:
-    print(
-        "Error importing AES256 CTR DRBG. Have you tried installing requirements?"
-    )
+    print("Error importing AES256 CTR DRBG. Have you tried installing requirements?")
     print(f"ImportError: {e}\n")
     print("Dilithium will work perfectly fine with system randomness")
 
@@ -111,16 +109,11 @@ class Dilithium:
         return self.M(matrix)
 
     def _make_hint_poly(self, p1, p2, alpha):
-        coeffs = [
-            make_hint(r, z, alpha, self.q)
-            for r, z in zip(p1.coeffs, p2.coeffs)
-        ]
+        coeffs = [make_hint(r, z, alpha, self.q) for r, z in zip(p1.coeffs, p2.coeffs)]
         return self.R(coeffs)
 
     def _use_hint_poly(self, p1, p2, alpha):
-        coeffs = [
-            use_hint(h, r, alpha, self.q) for h, r in zip(p1.coeffs, p2.coeffs)
-        ]
+        coeffs = [use_hint(h, r, alpha, self.q) for h, r in zip(p1.coeffs, p2.coeffs)]
         return self.R(coeffs)
 
     @staticmethod
@@ -256,9 +249,7 @@ class Dilithium:
         xof_bytes = Shake256.digest(seed, total_bytes)
         r = int.from_bytes(xof_bytes, "little")
         mask = (1 << bit_count) - 1
-        coeffs = [
-            self.gamma_1 - ((r >> bit_count * i) & mask) for i in range(self.n)
-        ]
+        coeffs = [self.gamma_1 - ((r >> bit_count * i) & mask) for i in range(self.n)]
 
         return self.R(coeffs, is_ntt=is_ntt)
 
@@ -294,8 +285,7 @@ class Dilithium:
 
     def _expandMask(self, rho_prime, kappa):
         elements = [
-            self._sample_mask_polynomial(rho_prime, i, kappa)
-            for i in range(self.l)
+            self._sample_mask_polynomial(rho_prime, i, kappa) for i in range(self.l)
         ]
         return self.M(elements).transpose()
 
