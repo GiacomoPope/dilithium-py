@@ -1,3 +1,6 @@
+[![GitHub CI](https://github.com/GiacomoPope/dilithium-py/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GiacomoPope/dilithium-py/actions/workflows/ci.yml)
+
+
 # CRYSTALS-Dilithium Python Implementation
 
 This repository contains a pure python implementation of CRYSTALS-Dilithium 
