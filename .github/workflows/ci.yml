@@ -74,6 +74,9 @@ jobs:
       - name: Display installed python package versions
         run: |
           pip list || :
+      - name: Install pytest
+        run: |
+          pip install pytest
       - name: Install build dependencies
         run: |
           pip install -r requirements.txt
