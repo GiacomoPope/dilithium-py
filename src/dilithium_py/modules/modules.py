@@ -174,6 +174,17 @@ class MatrixDilithium(Matrix):
         ]
         return self.parent(matrix)
 
+    def make_hint_optimised(self, other, alpha):
+        """
+        Figure 3 (Supporting algorithms for Dilithium)
+        https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
+        """
+        matrix = [
+            [p.make_hint_optimised(q, alpha) for p, q in zip(r1, r2)]
+            for r1, r2 in zip(self._data, other._data)
+        ]
+        return self.parent(matrix)
+
     def use_hint(self, other, alpha):
         """
         Figure 3 (Supporting algorithms for Dilithium)

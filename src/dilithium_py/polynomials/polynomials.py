@@ -7,7 +7,7 @@ from ..utilities.utils import (
     check_norm_bound,
 )
 from ..shake.shake_wrapper import Shake128, Shake256
-from ..utilities.utils import make_hint, use_hint
+from ..utilities.utils import make_hint, make_hint_optimised, use_hint
 
 
 class PolynomialRingDilithium(PolynomialRing):
@@ -369,6 +369,13 @@ class PolynomialDilithium(Polynomial):
     def make_hint(self, other, alpha):
         coeffs = [
             make_hint(r, z, alpha, 8380417) for r, z in zip(self.coeffs, other.coeffs)
+        ]
+        return self.parent(coeffs)
+
+    def make_hint_optimised(self, other, alpha):
+        coeffs = [
+            make_hint_optimised(r, z, alpha, 8380417)
+            for r, z in zip(self.coeffs, other.coeffs)
         ]
         return self.parent(coeffs)
 

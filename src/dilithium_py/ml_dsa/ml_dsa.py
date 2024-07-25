@@ -232,9 +232,9 @@ class ML_DSA:
         rho_prime = self._h(K + rnd + mu, 64)
 
         # Precompute NTT representation
-        s1 = s1.to_ntt()
-        s2 = s2.to_ntt()
-        t0 = t0.to_ntt()
+        s1_hat = s1.to_ntt()
+        s2_hat = s2.to_ntt()
+        t0_hat = t0.to_ntt()
 
         alpha = self.gamma_2 << 1
         while True:
@@ -246,33 +246,39 @@ class ML_DSA:
 
             w = (A_hat @ y_hat).from_ntt()
 
-            # Extract out both the high and low bits
-            w1, w0 = w.decompose(alpha)
+            # NOTE: there is an optimisation possible where both the high and
+            # low bits of w are extracted here, which speeds up some checks
+            # below and requires the use of make_hint_optimised() -- to see the
+            # implementation of this, look at the signing algorithm for
+            # dilithium. We include this slower version to mirror the FIPS 204
+            # document precisely.
+            # Extract out only the high bits
+            w1 = w.high_bits(alpha)
 
             # Create challenge polynomial
             w1_bytes = w1.bit_pack_w(self.gamma_2)
             c_tilde = self._h(mu + w1_bytes, self.c_tilde_bytes)
             c_seed_bytes = c_tilde[:32]
             c = self.R.sample_in_ball(c_seed_bytes, self.tau)
+            c_hat = c.to_ntt()
 
-            # Store c in NTT form
-            c = c.to_ntt()
-
-            z = y + (s1.scale(c)).from_ntt()
+            # NOTE: unlike FIPS 204 we start again as soon as a vector
+            # fails the norm bound to reduce any unneeded computations.
+            c_s1 = s1_hat.scale(c_hat).from_ntt()
+            z = y + c_s1
             if z.check_norm_bound(self.gamma_1 - self.beta):
                 continue
 
-            w0_minus_cs2 = w0 - s2.scale(c).from_ntt()
-            if w0_minus_cs2.check_norm_bound(self.gamma_2 - self.beta):
+            c_s2 = s2_hat.scale(c_hat).from_ntt()
+            r0 = (w - c_s2).low_bits(alpha)
+            if r0.check_norm_bound(self.gamma_2 - self.beta):
                 continue
 
-            c_t0 = t0.scale(c).from_ntt()
+            c_t0 = t0_hat.scale(c_hat).from_ntt()
             if c_t0.check_norm_bound(self.gamma_2):
                 continue
 
-            w0_minus_cs2_plus_ct0 = w0_minus_cs2 + c_t0
-
-            h = w0_minus_cs2_plus_ct0.make_hint(w1, alpha)
+            h = (-c_t0).make_hint(w - c_s2 + c_t0, alpha)
             if h.sum_hint() > self.omega:
                 continue
 

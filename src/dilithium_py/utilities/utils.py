@@ -8,16 +8,11 @@ def reduce_mod_pm(x, n):
     for n odd:
         -(n-1)/2 < r <= (n-1)/2
     for n even:
-        - n / 2  < r <= n / 2
+        - n / 2  <= r <= n / 2
     """
     x = x % n
     if x > (n >> 1):
         x -= n
-
-    # Asserts to try and understand __broken_make_hint()
-    # assert x > -(n >> 1)
-    # assert x <= (n >> 1)
-
     return x
 
 
@@ -41,11 +36,9 @@ def decompose(r, a, q):
     else:
         r1 = (rp - r0) // a
 
-    # Asserts to try and understand __broken_make_hint()
     # assert r0 > -(a >> 1)
     # assert r0 <= (a >> 1)
     # assert r % q == (r0 + r1 * a) % q
-
     return r1, r0
 
 
@@ -59,20 +52,19 @@ def low_bits(r, a, q):
     return r0
 
 
-# def __broken_make_hint(z, r, a, q):
-#     r1 = high_bits(r, a, q)
-#     v1 = high_bits(r + z, a, q)
-#     return int(r1 != v1)
-
-
-def make_hint(z0, r1, a, q):
+def make_hint(z, r, a, q):
     """
-    The above function from the documentation
-    fails sometimes, but this seems to work...
+    Check whether the top bit of z will change when r is added
+    """
+    r1 = high_bits(r, a, q)
+    v1 = high_bits(r + z, a, q)
+    return int(r1 != v1)
 
-    This assumes that
 
-    TODO: learn what the edge case is for the above function
+def make_hint_optimised(z0, r1, a, q):
+    """
+    Optimised version of the above used when the low bits w0 are extracted from
+    `w = (A_hat @ y_hat).from_ntt()` during signing
     """
     gamma2 = a >> 1
     if z0 <= gamma2 or z0 > (q - gamma2) or (z0 == (q - gamma2) and r1 == 0):
