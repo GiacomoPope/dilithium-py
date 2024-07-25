@@ -94,7 +94,7 @@ def check_norm_bound(n, b, q):
     x ∈ {0, 1,     ...,  (q-1)/2, (q-1)/2, ...,       1}
     """
     x = n % q
-    x = ((q - 1) >> 1) - x 
+    x = ((q - 1) >> 1) - x
     x = x ^ (x >> 31)
     x = ((q - 1) >> 1) - x
     return x >= b

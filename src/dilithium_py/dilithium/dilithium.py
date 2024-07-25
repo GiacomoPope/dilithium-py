@@ -5,6 +5,7 @@ from ..modules.modules import ModuleDilithium
 from ..shake.shake_wrapper import Shake128, Shake256
 from ..utilities.utils import make_hint, use_hint
 
+
 class Dilithium:
     def __init__(self, parameter_set):
         self.n = parameter_set["n"]

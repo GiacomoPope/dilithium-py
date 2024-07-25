@@ -3,10 +3,9 @@ from Crypto.Cipher import AES
 from typing import Optional
 from ..utilities.utils import xor_bytes
 
+
 class AES256_CTR_DRBG:
-    def __init__(
-        self, seed: Optional[bytes] = None, personalization: bytes = b""
-    ):
+    def __init__(self, seed: Optional[bytes] = None, personalization: bytes = b""):
         """
         DRBG implementation based on AES-256 CTR following the document NIST SP
         800-90A Section 10.2.1
@@ -58,9 +57,7 @@ class AES256_CTR_DRBG:
                 f"{self.seed_length}. Input has length {len(personalization)}"
             )
         # Ensure personalization has exactly seed_length bytes
-        personalization += bytes([0]) * (
-            self.seed_length - len(personalization)
-        )
+        personalization += bytes([0]) * (self.seed_length - len(personalization))
         # debugging
         assert len(personalization) == self.seed_length
         return xor_bytes(self.entropy_input, personalization)
@@ -96,9 +93,7 @@ class AES256_CTR_DRBG:
         self.key = tmp[:32]
         self.V = tmp[32:]
 
-    def random_bytes(
-        self, num_bytes: int, additional: Optional[bytes] = None
-    ) -> bytes:
+    def random_bytes(self, num_bytes: int, additional: Optional[bytes] = None) -> bytes:
         """
         Generate pseudorandom bytes without a generating function
 

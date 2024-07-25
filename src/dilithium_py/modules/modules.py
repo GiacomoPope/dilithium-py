@@ -151,7 +151,6 @@ class MatrixDilithium(Matrix):
         data = [[x.from_ntt() for x in row] for row in self._data]
         return self.parent(data, transpose=self._transpose)
 
-
     def high_bits(self, alpha, is_ntt=False):
         matrix = [
             [ele.high_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data

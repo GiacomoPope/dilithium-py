@@ -14,9 +14,21 @@ def profile_dilithium(Dilithium):
     gvars = {}
     lvars = {"Dilithium": Dilithium, "m": m, "pk": pk, "sk": sk, "sig": sig}
 
-    cProfile.runctx("[Dilithium.keygen() for _ in range(100)]", globals=gvars, locals=lvars, sort=1)
-    cProfile.runctx("[Dilithium.sign(sk, m) for _ in range(100)]", globals=gvars, locals=lvars, sort=1)
-    cProfile.runctx("[Dilithium.verify(pk, m, sig) for _ in range(100)]", globals=gvars, locals=lvars, sort=1)
+    cProfile.runctx(
+        "[Dilithium.keygen() for _ in range(100)]", globals=gvars, locals=lvars, sort=1
+    )
+    cProfile.runctx(
+        "[Dilithium.sign(sk, m) for _ in range(100)]",
+        globals=gvars,
+        locals=lvars,
+        sort=1,
+    )
+    cProfile.runctx(
+        "[Dilithium.verify(pk, m, sig) for _ in range(100)]",
+        globals=gvars,
+        locals=lvars,
+        sort=1,
+    )
 
 
 def benchmark_dilithium(Dilithium, name, count):

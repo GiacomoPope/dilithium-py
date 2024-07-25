@@ -49,9 +49,7 @@ class TestPolynomial(unittest.TestCase):
     def test_reduce_coefficients(self):
         for _ in range(100):
             # Create non-canonical coefficients
-            coeffs = [
-                randint(-2 * self.R.q, 3 * self.R.q) for _ in range(self.R.n)
-            ]
+            coeffs = [randint(-2 * self.R.q, 3 * self.R.q) for _ in range(self.R.n)]
             f = self.R(coeffs).reduce_coefficients()
             self.assertTrue(all([0 <= c < self.R.q for c in f.coeffs]))
 
@@ -155,6 +153,4 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(str(self.R(0)), "0")
         self.assertEqual(str(self.R(1)), "1")
         self.assertEqual(str(self.R.gen()), "x")
-        self.assertEqual(
-            str(self.R([1, 2, 3, 4, 1])), "1 + 2*x + 3*x^2 + 4*x^3 + x^4"
-        )
+        self.assertEqual(str(self.R([1, 2, 3, 4, 1])), "1 + 2*x + 3*x^2 + 4*x^3 + x^4")

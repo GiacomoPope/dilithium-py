@@ -14,9 +14,7 @@ class Module:
         :param int m: the number of columns in tge matrix
         :return: an element of the module with dimension `m times n`
         """
-        elements = [
-            [self.ring.random_element() for _ in range(n)] for _ in range(m)
-        ]
+        elements = [[self.ring.random_element() for _ in range(n)] for _ in range(m)]
         return self(elements)
 
     def __repr__(self):
@@ -33,18 +31,14 @@ class Module:
 
         if isinstance(matrix_elements[0], list):
             for element_list in matrix_elements:
-                if not all(
-                    isinstance(aij, self.ring.element) for aij in element_list
-                ):
+                if not all(isinstance(aij, self.ring.element) for aij in element_list):
                     raise TypeError(
                         f"All elements of the matrix must be elements of the ring: {self.ring}"
                     )
             return self.matrix(self, matrix_elements, transpose=transpose)
 
         elif isinstance(matrix_elements[0], self.ring.element):
-            if not all(
-                isinstance(aij, self.ring.element) for aij in matrix_elements
-            ):
+            if not all(isinstance(aij, self.ring.element) for aij in matrix_elements):
                 raise TypeError(
                     f"All elements of the matrix must be elements of the ring: {self.ring}"
                 )
@@ -121,9 +115,7 @@ class Matrix:
         """
         matrix[i, j] returns the element on row i, column j
         """
-        assert (
-            isinstance(idx, tuple) and len(idx) == 2
-        ), "Can't access individual rows"
+        assert isinstance(idx, tuple) and len(idx) == 2, "Can't access individual rows"
         if not self._transpose:
             return self._data[idx[0]][idx[1]]
         else:
@@ -133,9 +125,7 @@ class Matrix:
         if self.dim() != other.dim():
             return False
         m, n = self.dim()
-        return all(
-            [self[i, j] == other[i, j] for i in range(m) for j in range(n)]
-        )
+        return all([self[i, j] == other[i, j] for i in range(m) for j in range(n)])
 
     def __neg__(self):
         """
@@ -199,10 +189,7 @@ class Matrix:
 
         return self.parent(
             [
-                [
-                    sum(self[i, k] * other[k, j] for k in range(n))
-                    for j in range(l)
-                ]
+                [sum(self[i, k] * other[k, j] for k in range(n)) for j in range(l)]
                 for i in range(m)
             ]
         )
@@ -233,17 +220,10 @@ class Matrix:
         if m == 1:
             return str(self._data[0])
 
-        max_col_width = [
-            max(len(str(self[i, j])) for i in range(m)) for j in range(n)
-        ]
+        max_col_width = [max(len(str(self[i, j])) for i in range(m)) for j in range(n)]
         info = "]\n[".join(
             [
-                ", ".join(
-                    [
-                        f"{str(self[i, j]):>{max_col_width[j]}}"
-                        for j in range(n)
-                    ]
-                )
+                ", ".join([f"{str(self[i, j]):>{max_col_width[j]}}" for j in range(n)])
                 for i in range(m)
             ]
         )

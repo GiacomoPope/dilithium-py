@@ -29,12 +29,8 @@ class TestModule(unittest.TestCase):
         one = self.R(1)
         self.assertRaises(TypeError, lambda: self.M([one, "2", "3"]))
         self.assertRaises(TypeError, lambda: self.M(["2", one, "3"]))
-        self.assertRaises(
-            TypeError, lambda: self.M([[one, "2", "3"], [one, "2", "3"]])
-        )
-        self.assertRaises(
-            TypeError, lambda: self.M([["1", one, "3"], [one, "2", "3"]])
-        )
+        self.assertRaises(TypeError, lambda: self.M([[one, "2", "3"], [one, "2", "3"]]))
+        self.assertRaises(TypeError, lambda: self.M([["1", one, "3"], [one, "2", "3"]]))
 
     def test_non_rectangular(self):
         one = self.R(1)

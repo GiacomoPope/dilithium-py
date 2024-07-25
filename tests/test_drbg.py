@@ -35,9 +35,7 @@ class TestDRBG(unittest.TestCase):
         # if the personalization is longer than 48 bytes, fail
         seed = os.urandom(48)
         personalization = os.urandom(49)
-        self.assertRaises(
-            ValueError, lambda: AES256_CTR_DRBG(seed, personalization)
-        )
+        self.assertRaises(ValueError, lambda: AES256_CTR_DRBG(seed, personalization))
 
     def test_additional(self):
         drbg = AES256_CTR_DRBG()
@@ -49,6 +47,4 @@ class TestDRBG(unittest.TestCase):
         # if the additional data is longer than 48 bytes, fail
         drbg = AES256_CTR_DRBG()
         additional = os.urandom(49)
-        self.assertRaises(
-            ValueError, lambda: drbg.random_bytes(32, additional)
-        )
+        self.assertRaises(ValueError, lambda: drbg.random_bytes(32, additional))
