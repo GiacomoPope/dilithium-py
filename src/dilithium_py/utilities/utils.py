@@ -13,6 +13,8 @@ def reduce_mod_pm(x, n):
     x = x % n
     if x > (n >> 1):
         x -= n
+
+    # Asserts to try and understand __broken_make_hint()
     # assert x > -(n >> 1)
     # assert x <= (n >> 1)
 
@@ -33,9 +35,16 @@ def decompose(r, a, q):
     rp = r % q
     r0 = reduce_mod_pm(rp, a)
     r1 = rp - r0
-    if r1 == q - 1:
-        return 0, r0 - 1
-    r1 = r1 // a
+    if rp - r0 == q - 1:
+        r1 = 0
+        r0 = r0 - 1
+    else:
+        r1 = (rp - r0) // a
+
+    # Asserts to try and understand __broken_make_hint()
+    # assert r0 > -(a >> 1)
+    # assert r0 <= (a >> 1)
+    # assert r % q == (r0 + r1 * a) % q
 
     return r1, r0
 

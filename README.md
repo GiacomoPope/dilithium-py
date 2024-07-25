@@ -3,6 +3,14 @@
 
 # CRYSTALS-Dilithium Python Implementation
 
+> [!CAUTION]
+> :warning: **Under no circumstances should this be used for cryptographic
+applications.** :warning:
+> 
+> This is an educational resource and has not been designed to be secure
+> against any form of side-channel attack. The intended use of this project
+> is for learning and experimenting with ML-DSA and Dilithium
+
 This repository contains a pure python implementation of CRYSTALS-Dilithium 
 following (at the time of writing) the most recent 
 [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
@@ -13,9 +21,6 @@ which is a pure-python implementation of CRYSTALS-Kyber and reuses a lot of
 code. 
 
 ## Disclaimer
-
-:warning: **Under no circumstances should this be used for a cryptographic
-application.** :warning:
 
 I have written `dilithium-py` as a way to learn about the way protocol works,
 and to try and create a clean, well commented implementation which people can
@@ -32,7 +37,7 @@ This implementation passes all the KAT vectors, generated from the reference
 implementation version 3.1.
 
 These tests, as well as other internal unit tests are the file 
-[`test_dilithium.py`](test_dilithium.py).
+[`test_dilithium.py`](tests/test_dilithium.py).
 
 ### Generating KAT files
 
@@ -80,7 +85,7 @@ so you can simply import the NIST level you want to play with:
 #### Example
 
 ```python
->>> from dilithium import Dilithium2
+>>> from dilithium_py.dilithium import Dilithium2
 >>>
 >>> # Example of signing
 >>> pk, sk = Dilithium2.keygen()
@@ -114,7 +119,7 @@ All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls.
 
 ### Polynomials
 
-The file [`polynomials.py`](polynomials/polynomials_generic.py) contains the classes 
+The file [`polynomials.py`](src/dilithium_py/polynomials/polynomials_generic.py) contains the classes 
 `PolynomialRing` and 
 `Polynomial`. This implements the univariate polynomial ring
 
@@ -143,7 +148,7 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 ### Modules
 
-The file [`modules.py`](modules/modules_generic.py) contains the classes `Module` and `Matrix`.
+The file [`modules.py`](src/dilithium_py/modules/modules_generic.py) contains the classes `Module` and `Matrix`.
 A module is a generalisation of a vector space, where the field
 of scalars is replaced with a ring. In the case of Dilithium, we 
 need the module with the ring $R_q$ as described above. 
