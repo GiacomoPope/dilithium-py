@@ -85,4 +85,4 @@ jobs:
           pip list || :
       - name: Run unit tests
         run: |
-          pytest
+          PYTHONPATH=src pytest
