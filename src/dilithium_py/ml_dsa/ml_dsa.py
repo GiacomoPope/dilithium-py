@@ -3,7 +3,7 @@ from ..modules.modules import ModuleDilithium
 from ..shake.shake_wrapper import Shake256
 
 
-class Dilithium:
+class ML_DSA:
     def __init__(self, parameter_set):
         self.d = parameter_set["d"]
         self.k = parameter_set["k"]
@@ -14,6 +14,7 @@ class Dilithium:
         self.gamma_1 = parameter_set["gamma_1"]
         self.gamma_2 = parameter_set["gamma_2"]
         self.beta = self.tau * self.eta
+        self.c_tilde_bytes = parameter_set["c_tilde_bytes"]
 
         self.M = ModuleDilithium()
         self.R = self.M.ring
@@ -131,17 +132,17 @@ class Dilithium:
         s1_len = s_bytes * self.l
         s2_len = s_bytes * self.k
         t0_len = 416 * self.k
-        if len(sk_bytes) != 3 * 32 + s1_len + s2_len + t0_len:
+        if len(sk_bytes) != 2 * 32 + 64 + s1_len + s2_len + t0_len:
             raise ValueError("SK packed bytes is of the wrong length")
 
         # Split bytes between seeds and vectors
-        sk_seed_bytes, sk_vec_bytes = sk_bytes[:96], sk_bytes[96:]
+        sk_seed_bytes, sk_vec_bytes = sk_bytes[:128], sk_bytes[128:]
 
         # Unpack seed bytes
         rho, K, tr = (
             sk_seed_bytes[:32],
             sk_seed_bytes[32:64],
-            sk_seed_bytes[64:96],
+            sk_seed_bytes[64:128],
         )
 
         # Unpack vector bytes
@@ -171,8 +172,8 @@ class Dilithium:
         return self.M(matrix)
 
     def _unpack_sig(self, sig_bytes):
-        c_tilde = sig_bytes[:32]
-        z_bytes = sig_bytes[32 : -(self.k + self.omega)]
+        c_tilde = sig_bytes[: self.c_tilde_bytes]
+        z_bytes = sig_bytes[self.c_tilde_bytes : -(self.k + self.omega)]
         h_bytes = sig_bytes[-(self.k + self.omega) :]
 
         z = self.M.bit_unpack_z(z_bytes, self.l, 1, self.gamma_1)
@@ -206,12 +207,12 @@ class Dilithium:
 
         # Pack up the bytes
         pk = self._pack_pk(rho, t1)
-        tr = self._h(pk, 32)
+        tr = self._h(pk, 64)
 
         sk = self._pack_sk(rho, K, tr, s1, s2, t0)
         return pk, sk
 
-    def sign(self, sk_bytes, m):
+    def sign(self, sk_bytes, m, deterministic=False):
         """
         Generates a signature for a message m from a byte-encoded private key
         """
@@ -223,8 +224,12 @@ class Dilithium:
 
         # Set seeds and nonce (kappa)
         mu = self._h(tr + m, 64)
+        if deterministic:
+            rnd = bytes([0] * 32)
+        else:
+            rnd = self.random_bytes(32)
         kappa = 0
-        rho_prime = self._h(K + mu, 64)
+        rho_prime = self._h(K + rnd + mu, 64)
 
         # Precompute NTT representation
         s1 = s1.to_ntt()
@@ -246,8 +251,9 @@ class Dilithium:
 
             # Create challenge polynomial
             w1_bytes = w1.bit_pack_w(self.gamma_2)
-            c_tilde = self._h(mu + w1_bytes, 32)
-            c = self.R.sample_in_ball(c_tilde, self.tau)
+            c_tilde = self._h(mu + w1_bytes, self.c_tilde_bytes)
+            c_seed_bytes = c_tilde[:32]
+            c = self.R.sample_in_ball(c_seed_bytes, self.tau)
 
             # Store c in NTT form
             c = c.to_ntt()
@@ -279,6 +285,7 @@ class Dilithium:
         """
         rho, t1 = self._unpack_pk(pk_bytes)
         c_tilde, z, h = self._unpack_sig(sig_bytes)
+        c_seed_bytes = c_tilde[:32]
 
         if h.sum_hint() > self.omega:
             return False
@@ -288,9 +295,9 @@ class Dilithium:
 
         A_hat = self._expand_matrix_from_seed(rho)
 
-        tr = self._h(pk_bytes, 32)
+        tr = self._h(pk_bytes, 64)
         mu = self._h(tr + m, 64)
-        c = self.R.sample_in_ball(c_tilde, self.tau)
+        c = self.R.sample_in_ball(c_seed_bytes, self.tau)
 
         # Convert to NTT for computation
         c = c.to_ntt()
@@ -305,4 +312,4 @@ class Dilithium:
         w_prime = h.use_hint(Az_minus_ct1, 2 * self.gamma_2)
         w_prime_bytes = w_prime.bit_pack_w(self.gamma_2)
 
-        return c_tilde == self._h(mu + w_prime_bytes, 32)
+        return c_tilde == self._h(mu + w_prime_bytes, self.c_tilde_bytes)

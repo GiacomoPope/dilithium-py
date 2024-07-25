@@ -11,14 +11,18 @@ applications.** :warning:
 > against any form of side-channel attack. The intended use of this project
 > is for learning and experimenting with ML-DSA and Dilithium
 
-This repository contains a pure python implementation of CRYSTALS-Dilithium 
-following (at the time of writing) the most recent 
-[specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
-(v3.1)
+This repository contains a pure python implementation of both:
 
-This project has followed [`kyber-py`](https://github.com/GiacomoPope/kyber-py)
-which is a pure-python implementation of CRYSTALS-Kyber and reuses a lot of
-code. 
+1. **CRYSTALS-Dilithium**: following (at the time of writing) the most recent
+  [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf) (v3.1)
+2. **ML-DSA** the NIST Module-Lattice-Based Digital Signature Standard following
+   the [FIPS 204 (Initial Public
+   Draft)](https://csrc.nist.gov/pubs/fips/204/ipd) based off the Dilithium
+   submission to the NIST post-quantum project.
+
+**Note**: This project has followed
+[`kyber-py`](https://github.com/GiacomoPope/kyber-py) which is a pure-python
+implementation of CRYSTALS-Kyber and ML-KEM and reuses a lot of code. 
 
 ## Disclaimer
 
@@ -31,15 +35,29 @@ written so that reading though the pseudocode of the
 [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
 closely matches the code which we use within `dilithium.py` and supporting files.
 
+## History of this Repository
+
+This work started by simply implementing Dilithium for fun, however after NIST
+picked Dilithium to standardise as ML-DSA, the repository grew and now includes
+both implementations of Dilithium and ML-DSA. I assume as this repository ages,
+the Dilithium implementation will get less useful and the ML-DSA one will be the
+focus, but for historical reasons we will include both. If only so that people
+can study the differences which NIST introduced during the standardisation of
+the protocol.
+
 ### KATs
 
-This implementation passes all the KAT vectors, generated from the reference
-implementation version 3.1.
+This implementation passes all the KAT vectors for `dilithium` and `ml_dsa`. For more information see the unit tests in [`test_ml_dsa.py`](tests/test_ml_dsa.py) and [`test_dilithium.py`](tests/test_dilithium.py)
 
-These tests, as well as other internal unit tests are the file 
-[`test_dilithium.py`](tests/test_dilithium.py).
+The KAT files were either downloaded or generated:
 
-### Generating KAT files
+1. For **Dilithium**, the KAT files were generated from the projects [GitHub
+   repository](https://github.com/pq-crystals/dilithium/) and are included in
+   `assets/PQCsignKAT_*.rsp`
+2. For **ML-DSA**, the KAT files were download from the GitHub repository
+   [post-quantum-cryptography/KAT](https://github.com/post-quantum-cryptography/KAT/tree/main/MLDSA) and are included in `assets/kat_MLDSA_*.rsp`
+
+### Generating KAT files for Dilithium
 
 This implementation is based off the most recent specification (v3.1). 
 There were 
@@ -56,7 +74,7 @@ for version 3.1. These are the files inside [assets](assets/).
 Originally, as with `kyber-py`, this project was planned to have zero
 dependencies, however like `kyber-py`, to pass the KATs, I need  a 
 deterministic CSRNG. The reference implementation uses
-AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](ase256_ctr_drbg.py). 
+AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](src/dilithium_py/drbg/ase256_ctr_drbg.py). 
 However, I have not implemented AES itself, instead I import this from `pycryptodome`.
 
 To install dependencies, run `pip -r install requirements`.
@@ -65,6 +83,59 @@ If you're happy to use system randomness (`os.urandom`) then you don't need
 this dependency.
 
 ## Using dilithium-py
+
+### ML DSA
+
+There are three functions exposed on the `ML_DSA` class which are intended
+for use:
+
+- `ML_DSA.keygen()`: generate a bit-packed keypair `(pk, sk)`
+- `ML_DSA.sign(sk, msg)`: generate a bit-packed signature `sig` 
+from the message `msg` and bit-packed secret key `sk`.
+- `ML_DSA.verify(pk, msg, sig)`: verify that the bit-packed `sig` is
+valid for a given message `msg` and bit-packed public key `pk`.
+
+To use `ML_DSA()`, it must be initialised with a dictionary of the 
+protocol parameters. An example can be seen in `DEFAULT_PARAMETERS` in
+the file [`ml_dsa.py`](src/dilithium_py/ml_dsa/default_parameters.py)
+
+Additionally, the class has been initialised with these default parameters, 
+so you can simply import the NIST level you want to play with:
+
+#### Example
+
+```python
+>>> from dilithium_py.ml_dsa import ML_DSA_44
+>>>
+>>> # Example of signing
+>>> pk, sk = ML_DSA_44.keygen()
+>>> msg = b"Your message signed by ML_DSA"
+>>> sig = ML_DSA_44.sign(sk, msg)
+>>> assert ML_DSA_44.verify(pk, msg, sig)
+>>>
+>>> # Verification will fail with the wrong msg or pk
+>>> assert not ML_DSA_44.verify(pk, b"", sig)
+>>> pk_new, sk_new = ML_DSA_44.keygen()
+>>> assert not ML_DSA_44.verify(pk_new, msg, sig)
+```
+
+The above example would also work with the other NIST levels
+`ML_DSA_65` and `ML_DSA_87`.
+
+### Benchmarks
+
+Some very rough benchmarks to give an idea about performance:
+
+|  500 Iterations          | `ML_DSA_44`  | `ML_DSA_65`  | `ML_DSA_87`  |
+|--------------------------|--------------|--------------|--------------|
+| `KeyGen()` Median Time   |  7 ms        | 12 ms        | 19 ms        |
+| `Sign()`   Median Time   |  30 ms       | 43 ms        | 64 ms        |
+| `Sign()`   Average Time  |  39 ms       | 58 ms        | 76 ms        |
+| `Verify()` Median Time   |  8 ms        | 13 ms        | 21 ms        |
+
+All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
+
+### Dilithium
 
 There are three functions exposed on the `Dilithium` class which are intended
 for use:
@@ -77,7 +148,7 @@ valid for a given message `msg` and bit-packed public key `pk`.
 
 To use `Dilithium()`, it must be initialised with a dictionary of the 
 protocol parameters. An example can be seen in `DEFAULT_PARAMETERS` in
-the file [`dilithium.py`](dilithium.py)
+the file [`dilithium.py`](src/dilithium_py/dilithium/default_parameters.py)
 
 Additionally, the class has been initialised with these default parameters, 
 so you can simply import the NIST level you want to play with:
@@ -101,19 +172,6 @@ so you can simply import the NIST level you want to play with:
 
 The above example would also work with the other NIST levels
 `Dilithium3` and `Dilithium5`.
-
-### Benchmarks
-
-Some very rough benchmarks to give an idea about performance:
-
-|  500 Iterations          | `Dilithium2` | `Dilithium3` | `Dilithium5` |
-|--------------------------|--------------|--------------|--------------|
-| `KeyGen()` Median Time   |  7 ms        | 12 ms        | 19 ms        |
-| `Sign()`   Median Time   |  30 ms       | 43 ms        | 64 ms        |
-| `Sign()`   Average Time  |  39 ms       | 58 ms        | 76 ms        |
-| `Verify()` Median Time   |  8 ms        | 13 ms        | 21 ms        |
-
-All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
 
 ## Discussion of Implementation
 
