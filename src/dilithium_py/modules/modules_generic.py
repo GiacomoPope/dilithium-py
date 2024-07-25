@@ -1,7 +1,23 @@
 class Module:
     def __init__(self, ring):
+        """
+        Initialise a module over the ring ``ring``.
+        """
         self.ring = ring
         self.matrix = Matrix
+
+    def random_element(self, m, n):
+        """
+        Generate a random element of the module of dimension m x n
+
+        :param int m: the number of rows in the matrix
+        :param int m: the number of columns in tge matrix
+        :return: an element of the module with dimension `m times n`
+        """
+        elements = [
+            [self.ring.random_element() for _ in range(n)] for _ in range(m)
+        ]
+        return self(elements)
 
     def __repr__(self):
         return f"Module over the commutative ring: {self.ring}"
@@ -17,14 +33,18 @@ class Module:
 
         if isinstance(matrix_elements[0], list):
             for element_list in matrix_elements:
-                if not all(isinstance(aij, self.ring.element) for aij in element_list):
+                if not all(
+                    isinstance(aij, self.ring.element) for aij in element_list
+                ):
                     raise TypeError(
                         f"All elements of the matrix must be elements of the ring: {self.ring}"
                     )
             return self.matrix(self, matrix_elements, transpose=transpose)
 
         elif isinstance(matrix_elements[0], self.ring.element):
-            if not all(isinstance(aij, self.ring.element) for aij in matrix_elements):
+            if not all(
+                isinstance(aij, self.ring.element) for aij in matrix_elements
+            ):
                 raise TypeError(
                     f"All elements of the matrix must be elements of the ring: {self.ring}"
                 )
@@ -37,7 +57,10 @@ class Module:
 
     def vector(self, elements):
         """
-        Construct a vector with the given elements
+        Construct a vector given a list of elements of the module's ring
+
+        :param list: a list of elements of the ring
+        :return: a vector of the module
         """
         return self.matrix(self, [elements], transpose=True)
 
@@ -47,19 +70,23 @@ class Matrix:
         self.parent = parent
         self._data = matrix_data
         self._transpose = transpose
-        if not self.check_dimensions():
+        if not self._check_dimensions():
             raise ValueError("Inconsistent row lengths in matrix")
 
     def dim(self):
         """
         Return the dimensions of the matrix with m rows
-        and n columns"""
+        and n columns
+
+        :return: the dimension of the matrix ``(m, n)``
+        :rtype: tuple(int, int)
+        """
         if not self._transpose:
             return len(self._data), len(self._data[0])
         else:
             return len(self._data[0]), len(self._data)
 
-    def check_dimensions(self):
+    def _check_dimensions(self):
         """
         Ensure that the matrix is rectangular
         """
@@ -67,13 +94,13 @@ class Matrix:
 
     def transpose(self):
         """
-        Swap rows and columns of self
+        Return a matrix with the rows and columns of swapped
         """
         return self.parent(self._data, not self._transpose)
 
     def transpose_self(self):
         """
-        Transpose in place
+        Swap the rows and columns of the matrix in place
         """
         self._transpose = not self._transpose
         return
@@ -94,7 +121,9 @@ class Matrix:
         """
         matrix[i, j] returns the element on row i, column j
         """
-        assert isinstance(idx, tuple) and len(idx) == 2, "Can't access individual rows"
+        assert (
+            isinstance(idx, tuple) and len(idx) == 2
+        ), "Can't access individual rows"
         if not self._transpose:
             return self._data[idx[0]][idx[1]]
         else:
@@ -104,7 +133,19 @@ class Matrix:
         if self.dim() != other.dim():
             return False
         m, n = self.dim()
-        return all([self[i, j] == other[i, j] for i in range(m) for j in range(n)])
+        return all(
+            [self[i, j] == other[i, j] for i in range(m) for j in range(n)]
+        )
+
+    def __neg__(self):
+        """
+        Returns -self, by negating all elements
+        """
+        m, n = self.dim()
+        return self.parent(
+            [[-self[i, j] for j in range(n)] for i in range(m)],
+            self._transpose,
+        )
 
     def __add__(self, other):
         if not isinstance(other, type(self)):
@@ -119,9 +160,6 @@ class Matrix:
             [[self[i, j] + other[i, j] for j in range(n)] for i in range(m)],
             False,
         )
-
-    def __radd__(self, other):
-        return self.__add__(other)
 
     def __iadd__(self, other):
         self = self + other
@@ -140,9 +178,6 @@ class Matrix:
             [[self[i, j] - other[i, j] for j in range(n)] for i in range(m)],
             False,
         )
-
-    def __rsub__(self, other):
-        return self.__sub__(other)
 
     def __isub__(self, other):
         self = self - other
@@ -164,7 +199,10 @@ class Matrix:
 
         return self.parent(
             [
-                [sum(self[i, k] * other[k, j] for k in range(n)) for j in range(l)]
+                [
+                    sum(self[i, k] * other[k, j] for k in range(n))
+                    for j in range(l)
+                ]
                 for i in range(m)
             ]
         )
@@ -181,7 +219,7 @@ class Matrix:
 
     def dot(self, other):
         """
-        Inner product
+        Compute the inner product of two vectors
         """
         if not isinstance(other, type(self)):
             raise TypeError("Can only perform dot product with other matrices")
@@ -195,10 +233,17 @@ class Matrix:
         if m == 1:
             return str(self._data[0])
 
-        max_col_width = [max(len(str(self[i, j])) for i in range(m)) for j in range(n)]
+        max_col_width = [
+            max(len(str(self[i, j])) for i in range(m)) for j in range(n)
+        ]
         info = "]\n[".join(
             [
-                ", ".join([f"{str(self[i, j]):>{max_col_width[j]}}" for j in range(n)])
+                ", ".join(
+                    [
+                        f"{str(self[i, j]):>{max_col_width[j]}}"
+                        for j in range(n)
+                    ]
+                )
                 for i in range(m)
             ]
         )

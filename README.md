@@ -1,3 +1,4 @@
+[![License MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://github.com/GiacomoPope/dilithium-py/blob/main/LICENSE)
 [![GitHub CI](https://github.com/GiacomoPope/dilithium-py/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GiacomoPope/dilithium-py/actions/workflows/ci.yml)
 
 # CRYSTALS-Dilithium Python Implementation
@@ -7,7 +8,7 @@ following (at the time of writing) the most recent
 [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
 (v3.1)
 
-This project has followed [`kyber-py`](https://github.com/jack4818/kyber-py)
+This project has followed [`kyber-py`](https://github.com/GiacomoPope/kyber-py)
 which is a pure-python implementation of CRYSTALS-Kyber and reuses a lot of
 code. 
 

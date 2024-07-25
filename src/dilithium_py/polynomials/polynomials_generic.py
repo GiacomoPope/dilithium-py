@@ -14,9 +14,16 @@ class PolynomialRing:
         self.element = Polynomial
 
     def gen(self):
+        """
+        Return the generator `x` of the polynomial ring
+        """
         return self([0, 1])
 
     def random_element(self):
+        """
+        Compute a random element of the polynomial ring with coefficients in the
+        canonical range: ``[0, q-1]``
+        """
         coefficients = [random.randint(0, self.q - 1) for _ in range(self.n)]
         return self(coefficients)
 
@@ -36,7 +43,7 @@ class PolynomialRing:
 class Polynomial:
     def __init__(self, parent, coefficients):
         self.parent = parent
-        self.coeffs = self.parse_coefficients(coefficients)
+        self.coeffs = self._parse_coefficients(coefficients)
 
     def is_zero(self):
         """
@@ -50,7 +57,7 @@ class Polynomial:
         """
         return all(c == 0 for c in self.coeffs[1:])
 
-    def parse_coefficients(self, coefficients):
+    def _parse_coefficients(self, coefficients):
         """
         Helper function which right pads with zeros
         to allow polynomial construction as
@@ -72,25 +79,19 @@ class Polynomial:
         self.coeffs = [c % self.parent.q for c in self.coeffs]
         return self
 
-    def add_mod_q(self, x, y):
+    def _add_mod_q(self, x, y):
         """
         add two coefficients modulo q
         """
         return (x + y) % self.parent.q
 
-    def sub_mod_q(self, x, y):
+    def _sub_mod_q(self, x, y):
         """
         sub two coefficients modulo q
         """
         return (x - y) % self.parent.q
 
-    def mul_mod_q(self, x, y):
-        """
-        add two coefficients modulo q
-        """
-        return (x * y) % self.parent.q
-
-    def schoolbook_multiplication(self, other):
+    def _schoolbook_multiplication(self, other):
         """
         Naive implementation of polynomial multiplication
         suitible for all R_q = F_1[X]/(X^n + 1)
@@ -117,13 +118,16 @@ class Polynomial:
     def _add_(self, other):
         if isinstance(other, type(self)):
             new_coeffs = [
-                self.add_mod_q(x, y) for x, y in zip(self.coeffs, other.coeffs)
+                self._add_mod_q(x, y)
+                for x, y in zip(self.coeffs, other.coeffs)
             ]
         elif isinstance(other, int):
             new_coeffs = self.coeffs.copy()
-            new_coeffs[0] = self.add_mod_q(new_coeffs[0], other)
+            new_coeffs[0] = self._add_mod_q(new_coeffs[0], other)
         else:
-            raise NotImplementedError("Polynomials can only be added to each other")
+            raise NotImplementedError(
+                "Polynomials can only be added to each other"
+            )
         return new_coeffs
 
     def __add__(self, other):
@@ -140,11 +144,12 @@ class Polynomial:
     def _sub_(self, other):
         if isinstance(other, type(self)):
             new_coeffs = [
-                self.sub_mod_q(x, y) for x, y in zip(self.coeffs, other.coeffs)
+                self._sub_mod_q(x, y)
+                for x, y in zip(self.coeffs, other.coeffs)
             ]
         elif isinstance(other, int):
             new_coeffs = self.coeffs.copy()
-            new_coeffs[0] = self.sub_mod_q(new_coeffs[0], other)
+            new_coeffs[0] = self._sub_mod_q(new_coeffs[0], other)
         else:
             raise NotImplementedError(
                 "Polynomials can only be subtracted from each other"
@@ -156,7 +161,7 @@ class Polynomial:
         return self.parent(new_coeffs)
 
     def __rsub__(self, other):
-        return self.__sub__(other)
+        return -self.__sub__(other)
 
     def __isub__(self, other):
         self = self - other
@@ -164,7 +169,7 @@ class Polynomial:
 
     def __mul__(self, other):
         if isinstance(other, type(self)):
-            new_coeffs = self.schoolbook_multiplication(other)
+            new_coeffs = self._schoolbook_multiplication(other)
         elif isinstance(other, int):
             new_coeffs = [(c * other) % self.parent.q for c in self.coeffs]
         else:
@@ -204,7 +209,10 @@ class Polynomial:
         if isinstance(other, type(self)):
             return self.coeffs == other.coeffs
         elif isinstance(other, int):
-            if self.is_constant() and (other % self.parent.q) == self.coeffs[0]:
+            if (
+                self.is_constant()
+                and (other % self.parent.q) == self.coeffs[0]
+            ):
                 return True
         return False
 

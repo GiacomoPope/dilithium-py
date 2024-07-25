@@ -1,7 +1,7 @@
 import unittest
 import os
-from dilithium import Dilithium2, Dilithium3, Dilithium5
-from drbg.aes256_ctr_drbg import AES256_CTR_DRBG
+from dilithium_py.dilithium import Dilithium2, Dilithium3, Dilithium5
+from dilithium_py.drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 
 
 def parse_kat_data(data):

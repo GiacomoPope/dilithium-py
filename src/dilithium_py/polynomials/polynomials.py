@@ -1,5 +1,5 @@
-from polynomials.polynomials_generic import PolynomialRing, Polynomial
-from utilities.utils import (
+from .polynomials_generic import PolynomialRing, Polynomial
+from ..utilities.utils import (
     reduce_mod_pm,
     high_bits,
     low_bits,
@@ -101,7 +101,7 @@ class PolynomialRingDilithium(PolynomialRing):
 class PolynomialDilithium(Polynomial):
     def __init__(self, parent, coefficients):
         self.parent = parent
-        self.coeffs = self.parse_coefficients(coefficients)
+        self.coeffs = self._parse_coefficients(coefficients)
 
     def to_ntt(self):
         """
@@ -200,7 +200,7 @@ class PolynomialDilithium(Polynomial):
         return self.__bit_pack(self.coeffs, 10, 320)
 
     def bit_pack_s(self, eta):
-        altered_coeffs = [self.sub_mod_q(eta, c) for c in self.coeffs]
+        altered_coeffs = [self._sub_mod_q(eta, c) for c in self.coeffs]
         # Level 2 and 5 parameter set
         if eta == 2:
             return self.__bit_pack(altered_coeffs, 3, 96)
@@ -221,7 +221,7 @@ class PolynomialDilithium(Polynomial):
             raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
 
     def bit_pack_z(self, gamma_1):
-        altered_coeffs = [self.sub_mod_q(gamma_1, c) for c in self.coeffs]
+        altered_coeffs = [self._sub_mod_q(gamma_1, c) for c in self.coeffs]
         # Level 2 parameter set
         if gamma_1 == (1 << 17):
             return self.__bit_pack(altered_coeffs, 18, 576)
@@ -235,7 +235,7 @@ class PolynomialDilithium(Polynomial):
 class PolynomialDilithiumNTT(PolynomialDilithium):
     def __init__(self, parent, coefficients):
         self.parent = parent
-        self.coeffs = self.parse_coefficients(coefficients)
+        self.coeffs = self._parse_coefficients(coefficients)
 
     def to_ntt(self):
         raise TypeError(f"Polynomial is of type: {type(self)}")

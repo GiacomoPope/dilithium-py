@@ -1,5 +1,5 @@
-from modules.modules_generic import Module, Matrix
-from polynomials.polynomials import PolynomialRingDilithium
+from .modules_generic import Module, Matrix
+from ..polynomials.polynomials import PolynomialRingDilithium
 
 
 class ModuleDilithium(Module):
@@ -66,11 +66,7 @@ class ModuleDilithium(Module):
 
 class MatrixDilithium(Matrix):
     def __init__(self, parent, matrix_data, transpose=False):
-        self.parent = parent
-        self._data = matrix_data
-        self._transpose = transpose
-        if not self.check_dimensions():
-            raise ValueError("Inconsistent row lengths in matrix")
+        super().__init__(parent, matrix_data, transpose=transpose)
 
     def check_norm_bound(self, bound):
         for row in self._data:
@@ -142,12 +138,19 @@ class MatrixDilithium(Matrix):
         return self.__bit_pack(algorithm, gamma_1)
 
     def to_ntt(self):
-        matrix = [[ele.to_ntt() for ele in row] for row in self._data]
-        return self.parent(matrix, transpose=self._transpose)
+        """
+        Convert every element of the matrix into NTT form
+        """
+        data = [[x.to_ntt() for x in row] for row in self._data]
+        return self.parent(data, transpose=self._transpose)
 
     def from_ntt(self):
-        matrix = [[ele.from_ntt() for ele in row] for row in self._data]
-        return self.parent(matrix, transpose=self._transpose)
+        """
+        Convert every element of the matrix from NTT form
+        """
+        data = [[x.from_ntt() for x in row] for row in self._data]
+        return self.parent(data, transpose=self._transpose)
+
 
     def high_bits(self, alpha, is_ntt=False):
         matrix = [

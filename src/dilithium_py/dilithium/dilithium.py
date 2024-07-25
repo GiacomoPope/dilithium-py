@@ -1,17 +1,9 @@
 import os
 
-from polynomials.polynomials import PolynomialRingDilithium
-from modules.modules import ModuleDilithium
-from shake.shake_wrapper import Shake128, Shake256
-from utilities.utils import make_hint, use_hint
-
-try:
-    from drbg.aes256_ctr_drbg import AES256_CTR_DRBG
-except ImportError as e:
-    print("Error importing AES256 CTR DRBG. Have you tried installing requirements?")
-    print(f"ImportError: {e}\n")
-    print("Dilithium will work perfectly fine with system randomness")
-
+from ..polynomials.polynomials import PolynomialRingDilithium
+from ..modules.modules import ModuleDilithium
+from ..shake.shake_wrapper import Shake128, Shake256
+from ..utilities.utils import make_hint, use_hint
 
 class Dilithium:
     def __init__(self, parameter_set):
@@ -31,39 +23,33 @@ class Dilithium:
         self.R = PolynomialRingDilithium()
         self.M = ModuleDilithium()
 
-        self.drbg = None
+        # Use system randomness by default, for deterministic randomness
+        # use the method `set_drbg_seed()`
         self.random_bytes = os.urandom
-
-    """
-    The following two methods allow us to use deterministic
-    randomness throughout all of Dilithium. This is helpful
-    for the KAT tests more than anything!
-    """
 
     def set_drbg_seed(self, seed):
         """
-        Setting the seed switches the entropy source
-        from os.urandom to AES256 CTR DRBG
+        Change entropy source to a DRBG and seed it with provided value.
 
-        Note: requires pycryptodome for AES impl.
-        (Seemed overkill to code my own AES for Kyber)
-        """
-        self.drbg = AES256_CTR_DRBG(seed)
-        self.random_bytes = self.drbg.random_bytes
+        Setting the seed switches the entropy source from :func:`os.urandom()`
+        to an AES256 CTR DRBG.
 
-    def reseed_drbg(self, seed):
-        """
-        Reseeds the DRBG, errors if a DRBG is not set.
+        Used for both deterministic versions of Kyber as well as testing
+        alignment with the KAT vectors
 
-        Note: requires pycryptodome for AES impl.
-        (Seemed overkill to code my own AES for Kyber)
+        Note:
+          currently requires pycryptodome for AES impl.
         """
-        if self.drbg is None:
+        try:
+            from ..drbg.aes256_ctr_drbg import AES256_CTR_DRBG
+
+            self._drbg = AES256_CTR_DRBG(seed)
+            self.random_bytes = self._drbg.random_bytes
+        except ImportError as e:  # pragma: no cover
+            print(f"Error importing AES from pycryptodome: {e = }")
             raise Warning(
-                "Cannot reseed DRBG without first initialising. Try using `set_drbg_seed`"
+                "Cannot set DRBG seed due to missing dependencies, try installing requirements: pip -r install requirements"
             )
-        else:
-            self.drbg.reseed(seed)
 
     """
     H() uses Shake256 to hash data to 32 and 64 bytes in a 
