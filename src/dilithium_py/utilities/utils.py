@@ -1,26 +1,22 @@
-from collections import deque
-
-
-def reduce_mod_pm(n, a):
+def reduce_mod_pm(x, n):
     """
-    Takes an integer n and represents
+    Takes an integer 0 < x < n and represents
     it as an integer in the range
 
-    r = n % a
+    r = x % n
 
-    for a odd:
-        -(a-1)/2 < r <= (a-1)/2
-    for a even:
-        - a / 2  < r <= a / 2
+    for n odd:
+        -(n-1)/2 < r <= (n-1)/2
+    for n even:
+        - n / 2  < r <= n / 2
     """
-    r = n % a
-    if r > (a >> 1):
-        r -= a
+    x = x % n
+    if x > (n >> 1):
+        x -= n
+    # assert x > -(n >> 1)
+    # assert x <= (n >> 1)
 
-    # assert r > -(a >> 1)
-    # assert r <= (a >> 1)
-    # assert (n % a) == (r % a)
-    return r
+    return x
 
 
 def decompose(r, a, q):
@@ -34,13 +30,13 @@ def decompose(r, a, q):
 
     -(a << 1) < r0 <= (a << 1)
     """
-    r = r % q
-    r0 = reduce_mod_pm(r, a)
-    r1 = r - r0
+    rp = r % q
+    r0 = reduce_mod_pm(rp, a)
+    r1 = rp - r0
     if r1 == q - 1:
         return 0, r0 - 1
     r1 = r1 // a
-    assert r == r1 * a + r0
+
     return r1, r0
 
 
@@ -98,30 +94,6 @@ def check_norm_bound(n, b, q):
     x = x ^ (x >> 31)
     x = ((q - 1) >> 1) - x
     return x >= b
-
-
-def get_n_blocks(xof, n, blocks_read):
-    blocks_read += n
-    # extract last n blocks
-    total_bytes = 136 * blocks_read
-    xof_bytes = xof.digest(total_bytes)[-136 * n :]
-    # We use `deque` because it has a fast .popleft()
-    return deque(xof_bytes), blocks_read
-
-
-def get_mask_integers(bit_count, xof, n, blocks_read):
-    blocks_read += n * bit_count
-    # extract last n*bit_count blocks
-    total_bytes = 136 * blocks_read
-    xof_bytes = xof.digest(total_bytes)[-136 * n * bit_count :]
-
-    r = int.from_bytes(xof_bytes, "little")
-    mask = (1 << bit_count) - 1
-    mask_integers = []
-    for _ in range(256):
-        mask_integers.append(r & mask)
-        r >>= bit_count
-    return deque(mask_integers), blocks_read
 
 
 def xor_bytes(a, b):

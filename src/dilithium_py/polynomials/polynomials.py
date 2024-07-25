@@ -6,6 +6,8 @@ from ..utilities.utils import (
     decompose,
     check_norm_bound,
 )
+from ..shake.shake_wrapper import Shake128, Shake256
+from ..utilities.utils import make_hint, use_hint
 
 
 class PolynomialRingDilithium(PolynomialRing):
@@ -28,6 +30,137 @@ class PolynomialRingDilithium(PolynomialRing):
         """
         bin_i = bin(i & (2**k - 1))[2:].zfill(k)
         return int(bin_i[::-1], 2)
+
+    def sample_in_ball(self, seed, tau):
+        """
+        Figure 2 (Sample in Ball)
+            https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
+
+        Create a random 256-element array with τ ±1’s and (256 − τ) 0′s using
+        the input seed ρ (and an SHAKE256) to generate the randomness needed
+        """
+
+        def rejection_sample(i, xof):
+            """
+            Sample random bytes from `xof_bytes` and
+            interpret them as integers in {0, ..., 255}
+
+            Rejects values until a value j <= i is found
+            """
+            while True:
+                j = xof.read(1)[0]
+                if j <= i:
+                    return j
+
+        # Initialise the XOF
+        Shake256.absorb(seed)
+
+        # Set the first 8 bytes for the sign, and leave the rest for
+        # sampling.
+        sign_bytes = Shake256.read(8)
+        sign_int = int.from_bytes(sign_bytes, "little")
+
+        # Set the list of coeffs to be 0
+        coeffs = [0 for _ in range(256)]
+
+        # Now set tau values of coeffs to be ±1
+        for i in range(256 - tau, 256):
+            j = rejection_sample(i, Shake256)
+            coeffs[i] = coeffs[j]
+            coeffs[j] = 1 - 2 * (sign_int & 1)
+            sign_int >>= 1
+
+        return self(coeffs)
+
+    def rejection_sample_ntt_poly(self, rho, i, j):
+        """
+        Samples an element in the NTT domain of R^q using rejection sampling
+        """
+
+        def rejection_sample(xof):
+            """
+            Sample three random bytes from `xof` and
+            interpret them as integers in {0, ..., 2^23 - 1}
+
+            Rejects values until a value j < q is found
+            """
+            while True:
+                j_bytes = xof.read(3)
+                j = int.from_bytes(j_bytes, "little")
+                j &= 0x7FFFFF
+                if j < 8380417:
+                    return j
+
+        # Initialise the XOF
+        seed = rho + bytes([j, i])
+        Shake128.absorb(seed)
+        coeffs = [rejection_sample(Shake128) for _ in range(256)]
+        return self(coeffs, is_ntt=True)
+
+    def rejection_bounded_poly(self, rho_prime, i, eta):
+        """
+        Computes an element of the polynomial ring with coefficients between
+        -eta and eta using rejection sampling from an XOF
+        """
+
+        def coefficient_from_half_byte(j, eta):
+            """
+            Rejects values until a value j < 2η is found
+            """
+            if eta == 2 and j < 15:
+                return 2 - (j % 5)
+            elif j < 9:
+                assert eta == 4
+                return 4 - j
+            return False
+
+        # Initialise the XOF
+        seed = rho_prime + int.to_bytes(i, 2, "little")
+        Shake256.absorb(seed)
+
+        # Sample bytes for all n coeffs
+        i = 0
+        coeffs = [0 for _ in range(256)]
+        while i < 256:
+            # Consider two values for each byte (top and bottom four bits)
+            j = Shake256.read(1)[0]
+
+            c0 = coefficient_from_half_byte(j % 16, eta)
+            if c0 is not False:
+                coeffs[i] = c0
+                i += 1
+
+            c1 = coefficient_from_half_byte(j // 16, eta)
+            if c1 is not False and i < 256:
+                coeffs[i] = c1
+                i += 1
+
+        # Remove the last byte if we ended up overfilling
+        if len(coeffs) > 256:
+            coeffs = coeffs[:256]
+
+        return self(coeffs)
+
+    def sample_mask_polynomial(self, rho_prime, i, kappa, gamma_1):
+        """
+        Samples an element in the polynomial ring with elements bounded
+        between -gamma_1 + 1 and gamma_1.
+        """
+        if gamma_1 == (1 << 17):
+            bit_count = 18
+            total_bytes = 576  # (256 * 18) / 8
+        else:
+            bit_count = 20
+            total_bytes = 640  # (256 * 20) / 8
+
+        # Initialise the XOF
+        seed = rho_prime + int.to_bytes(kappa + i, 2, "little")
+        xof_bytes = Shake256.digest(seed, total_bytes)
+        r = int.from_bytes(xof_bytes, "little")
+        mask = (1 << bit_count) - 1
+        coeffs = [gamma_1 - ((r >> bit_count * i) & mask) for i in range(self.n)]
+
+        return self(coeffs)
 
     def __bit_unpack(self, input_bytes, n_bits):
         if (len(input_bytes) * n_bits) % 8 != 0:
@@ -53,10 +186,10 @@ class PolynomialRingDilithium(PolynomialRing):
         if eta == 2:
             altered_coeffs = self.__bit_unpack(input_bytes, 3)
         # Level 3 parameter set
-        elif eta == 4:
-            altered_coeffs = self.__bit_unpack(input_bytes, 4)
         else:
-            raise ValueError("Expected eta to be either 2 or 4")
+            assert eta == 4, f"Expected eta to be either 2 or 4, got {eta = }"
+            altered_coeffs = self.__bit_unpack(input_bytes, 4)
+
         coefficients = [eta - c for c in altered_coeffs]
         return self(coefficients)
 
@@ -65,10 +198,12 @@ class PolynomialRingDilithium(PolynomialRing):
         if gamma_2 == 95232:
             coefficients = self.__bit_unpack(input_bytes, 6)
         # Level 3 and 5 parameter set
-        elif gamma_2 == 261888:
-            coefficients = self.__bit_unpack(input_bytes, 4)
         else:
-            raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
+            assert (
+                gamma_2 == 261888
+            ), f"Expected gamma_2 to be either (q-1)/88 or (q-1)/32, got {gamma_2 = }"
+            coefficients = self.__bit_unpack(input_bytes, 4)
+
         return self(coefficients)
 
     def bit_unpack_z(self, input_bytes, gamma_1):
@@ -76,10 +211,12 @@ class PolynomialRingDilithium(PolynomialRing):
         if gamma_1 == (1 << 17):
             altered_coeffs = self.__bit_unpack(input_bytes, 18)
         # Level 3 and 5 parameter set
-        elif gamma_1 == (1 << 19):
-            altered_coeffs = self.__bit_unpack(input_bytes, 20)
         else:
-            raise ValueError("Expected gamma_1 to be either 2^17 or 2^19")
+            assert gamma_1 == (
+                1 << 19
+            ), f"Expected gamma_1 to be either 2^17 or 2^19, got {gamma_1 = }"
+            altered_coeffs = self.__bit_unpack(input_bytes, 20)
+
         coefficients = [gamma_1 - c for c in altered_coeffs]
         return self(coefficients)
 
@@ -205,20 +342,18 @@ class PolynomialDilithium(Polynomial):
         if eta == 2:
             return self.__bit_pack(altered_coeffs, 3, 96)
         # Level 3 parameter set
-        elif eta == 4:
-            return self.__bit_pack(altered_coeffs, 4, 128)
-        else:
-            raise ValueError("Expected eta to be either 2 or 4")
+        assert eta == 4, f"Expected eta to be either 2 or 4, got {eta = }"
+        return self.__bit_pack(altered_coeffs, 4, 128)
 
     def bit_pack_w(self, gamma_2):
         # Level 2 parameter set
         if gamma_2 == 95232:
             return self.__bit_pack(self.coeffs, 6, 192)
         # Level 3 and 5 parameter set
-        elif gamma_2 == 261888:
-            return self.__bit_pack(self.coeffs, 4, 128)
-        else:
-            raise ValueError("Expected gamma_2 to be either (q-1)/88 or (q-1)/32")
+        assert (
+            gamma_2 == 261888
+        ), f"Expected gamma_2 to be either (q-1)/88 or (q-1)/32, got {gamma_2 = }"
+        return self.__bit_pack(self.coeffs, 4, 128)
 
     def bit_pack_z(self, gamma_1):
         altered_coeffs = [self._sub_mod_q(gamma_1, c) for c in self.coeffs]
@@ -226,10 +361,22 @@ class PolynomialDilithium(Polynomial):
         if gamma_1 == (1 << 17):
             return self.__bit_pack(altered_coeffs, 18, 576)
         # Level 3 and 5 parameter set
-        elif gamma_1 == (1 << 19):
-            return self.__bit_pack(altered_coeffs, 20, 640)
-        else:
-            raise ValueError("Expected gamma_1 to be either 2^17 or 2^19")
+        assert gamma_1 == (
+            1 << 19
+        ), f"Expected gamma_1 to be either 2^17 or 2^19, got: {gamma_1 = }"
+        return self.__bit_pack(altered_coeffs, 20, 640)
+
+    def make_hint(self, other, alpha):
+        coeffs = [
+            make_hint(r, z, alpha, 8380417) for r, z in zip(self.coeffs, other.coeffs)
+        ]
+        return self.parent(coeffs)
+
+    def use_hint(self, other, alpha):
+        coeffs = [
+            use_hint(h, r, alpha, 8380417) for h, r in zip(self.coeffs, other.coeffs)
+        ]
+        return self.parent(coeffs)
 
 
 class PolynomialDilithiumNTT(PolynomialDilithium):

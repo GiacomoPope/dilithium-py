@@ -162,3 +162,32 @@ class MatrixDilithium(Matrix):
             [ele.low_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data
         ]
         return self.parent(matrix)
+
+    def make_hint(self, other, alpha):
+        """
+        Figure 3 (Supporting algorithms for Dilithium)
+        https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
+        """
+        matrix = [
+            [p.make_hint(q, alpha) for p, q in zip(r1, r2)]
+            for r1, r2 in zip(self._data, other._data)
+        ]
+        return self.parent(matrix)
+
+    def use_hint(self, other, alpha):
+        """
+        Figure 3 (Supporting algorithms for Dilithium)
+        https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
+        """
+        matrix = [
+            [p.use_hint(q, alpha) for p, q in zip(r1, r2)]
+            for r1, r2 in zip(self._data, other._data)
+        ]
+        return self.parent(matrix)
+
+    def sum_hint(self):
+        """
+        Helper function to count the number of coeffs == 1
+        in all the polynomials of a matrix
+        """
+        return sum(c for row in self._data for p in row for c in p)

@@ -1,28 +1,22 @@
 import os
-
-from ..polynomials.polynomials import PolynomialRingDilithium
 from ..modules.modules import ModuleDilithium
-from ..shake.shake_wrapper import Shake128, Shake256
-from ..utilities.utils import make_hint, use_hint
+from ..shake.shake_wrapper import Shake256
 
 
 class Dilithium:
     def __init__(self, parameter_set):
-        self.n = parameter_set["n"]
-        self.q = parameter_set["q"]
         self.d = parameter_set["d"]
         self.k = parameter_set["k"]
         self.l = parameter_set["l"]
         self.eta = parameter_set["eta"]
-        self.eta_bound = parameter_set["eta_bound"]
         self.tau = parameter_set["tau"]
         self.omega = parameter_set["omega"]
         self.gamma_1 = parameter_set["gamma_1"]
         self.gamma_2 = parameter_set["gamma_2"]
         self.beta = self.tau * self.eta
 
-        self.R = PolynomialRingDilithium()
         self.M = ModuleDilithium()
+        self.R = self.M.ring
 
         # Use system randomness by default, for deterministic randomness
         # use the method `set_drbg_seed()`
@@ -64,217 +58,36 @@ class Dilithium:
         """
         return Shake256.digest(input_bytes, length)
 
-    """
-    Figure 3 (Supporting algorithms for Dilithium)
-    `_make_hint/_use_hint` is applied to matrices and `_make_hint_poly/_use_hint_poly` 
-    applies to the polynomials, which are elements of the matrices. 
-    
-    `_make_hint_poly/_use_hint_poly` uses the util functions `use_hint/make_hint` 
-    which works on field elements (see utils.py)
-    
-        https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
-    """
-
-    def _make_hint(self, v1, v2, alpha):
-        matrix = [
-            [
-                self._make_hint_poly(p1, p2, alpha)
-                for p1, p2 in zip(v1._data[i], v2._data[i])
-            ]
-            for i in range(len(v1._data))
-        ]
-        return self.M(matrix)
-
-    def _use_hint(self, v1, v2, alpha):
-        matrix = [
-            [
-                self._use_hint_poly(p1, p2, alpha)
-                for p1, p2 in zip(v1._data[i], v2._data[i])
-            ]
-            for i in range(len(v1._data))
-        ]
-        return self.M(matrix)
-
-    def _make_hint_poly(self, p1, p2, alpha):
-        coeffs = [make_hint(r, z, alpha, self.q) for r, z in zip(p1.coeffs, p2.coeffs)]
-        return self.R(coeffs)
-
-    def _use_hint_poly(self, p1, p2, alpha):
-        coeffs = [use_hint(h, r, alpha, self.q) for h, r in zip(p1.coeffs, p2.coeffs)]
-        return self.R(coeffs)
-
-    @staticmethod
-    def _sum_hint(hint):
-        """
-        Helper function to count the number of coeffs == 1
-        in all the polynomials of a matrix
-        """
-        return sum(c for row in hint._data for p in row for c in p)
-
-    def _sample_in_ball(self, seed):
-        """
-        Figure 2 (Sample in Ball)
-            https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf
-
-        Create a random 256-element array with τ ±1’s and (256 − τ) 0′s using
-        the input seed ρ (and an SHAKE256) to generate the randomness needed
-        """
-
-        def rejection_sample(i, xof):
-            """
-            Sample random bytes from `xof_bytes` and
-            interpret them as integers in {0, ..., 255}
-
-            Rejects values until a value j <= i is found
-            """
-            while True:
-                j = xof.read(1)
-                j = int.from_bytes(j, "little")
-                if j <= i:
-                    return j
-
-        # Initialise the XOF
-        Shake256.absorb(seed)
-
-        # Set the first 8 bytes for the sign, and leave the rest for
-        # sampling.
-        sign_bytes = Shake256.read(8)
-        sign_int = int.from_bytes(sign_bytes, "little")
-
-        # Set the list of coeffs to be 0
-        coeffs = [0 for _ in range(self.n)]
-
-        # Now set tau values of coeffs to be ±1
-        for i in range(256 - self.tau, self.n):
-            j = rejection_sample(i, Shake256)
-            coeffs[i] = coeffs[j]
-            coeffs[j] = 1 - 2 * (sign_int & 1)
-            sign_int >>= 1
-
-        return self.R(coeffs)
-
-    def _sample_error_polynomial(self, rho_prime, i, is_ntt=False):
-        def rejection_sample(xof):
-            """
-            Sample a random byte from `xof_bytes` and
-            interpret it as two integers in {0, ..., 2η}
-            by considering the top and bottom four bits
-
-            Rejects values until a value j < 2η is found
-            """
-            while True:
-                js = []
-
-                # Consider two values for each byte (top and bottom four bits)
-                j = xof.read(1)
-                j = int.from_bytes(j, "little")
-                j0 = j & 0x0F
-                j1 = j >> 4
-
-                # rejection sample
-                if j0 < self.eta_bound:
-                    if self.eta == 2:
-                        j0 %= 5
-                    js.append(self.eta - j0)
-
-                if j1 < self.eta_bound:
-                    if self.eta == 2:
-                        j1 %= 5
-                    js.append(self.eta - j1)
-
-                if js:
-                    return js
-
-        # Initialise the XOF
-        seed = rho_prime + int.to_bytes(i, 2, "little")
-        Shake256.absorb(seed)
-
-        # Sample bytes for all n coeffs
-        # TODO: make this better.
-        coeffs = []
-        while len(coeffs) < self.n:
-            js = rejection_sample(Shake256)
-            coeffs += js
-
-        # Remove the last byte if we ended up overfilling
-        if len(coeffs) > self.n:
-            coeffs = coeffs[: self.n]
-
-        return self.R(coeffs, is_ntt=is_ntt)
-
-    def _sample_matrix_polynomial(self, rho, i, j, is_ntt=False):
-        def rejection_sample(xof):
-            """
-            Sample three random bytes from `xof` and
-            interpret them as integers in {0, ..., 2^23 - 1}
-
-            Rejects values until a value j < q is found
-            """
-            while True:
-                j_bytes = xof.read(3)
-                j = int.from_bytes(j_bytes, "little")
-                j &= 0x7FFFFF
-                if j < self.q:
-                    return j
-
-        # Initialise the XOF
-        seed = rho + bytes([j, i])
-        Shake128.absorb(seed)
-        coeffs = [rejection_sample(Shake128) for _ in range(self.n)]
-        return self.R(coeffs, is_ntt=is_ntt)
-
-    def _sample_mask_polynomial(self, rho_prime, i, kappa, is_ntt=False):
-        if self.gamma_1 == (1 << 17):
-            bit_count = 18
-            total_bytes = 576  # (256 * 18) / 8
-        else:
-            bit_count = 20
-            total_bytes = 640  # (256 * 20) / 8
-
-        # Initialise the XOF
-        seed = rho_prime + int.to_bytes(kappa + i, 2, "little")
-        xof_bytes = Shake256.digest(seed, total_bytes)
-        r = int.from_bytes(xof_bytes, "little")
-        mask = (1 << bit_count) - 1
-        coeffs = [self.gamma_1 - ((r >> bit_count * i) & mask) for i in range(self.n)]
-
-        return self.R(coeffs, is_ntt=is_ntt)
-
-    def _expandA(self, rho, is_ntt=False):
+    def _expand_matrix_from_seed(self, rho):
         """
         Helper function which generates a element of size
         k x l from a seed `rho`.
-
-        When `transpose` is set to True, the matrix A is
-        built as the transpose.
         """
-        matrix = [
-            [
-                self._sample_matrix_polynomial(rho, i, j, is_ntt=is_ntt)
-                for j in range(self.l)
-            ]
-            for i in range(self.k)
-        ]
-        return self.M(matrix)
+        A_data = [[0 for _ in range(self.l)] for _ in range(self.k)]
+        for i in range(self.k):
+            for j in range(self.l):
+                A_data[i][j] = self.R.rejection_sample_ntt_poly(rho, i, j)
+        return self.M(A_data)
 
-    def _expandS(self, rho_prime):
+    def _expand_vector_from_seed(self, rho_prime):
         s1_elements = [
-            self._sample_error_polynomial(rho_prime, i) for i in range(self.l)
+            self.R.rejection_bounded_poly(rho_prime, i, self.eta) for i in range(self.l)
         ]
         s2_elements = [
-            self._sample_error_polynomial(rho_prime, i)
+            self.R.rejection_bounded_poly(rho_prime, i, self.eta)
             for i in range(self.l, self.l + self.k)
         ]
 
-        s1 = self.M(s1_elements).transpose()
-        s2 = self.M(s2_elements).transpose()
+        s1 = self.M.vector(s1_elements)
+        s2 = self.M.vector(s2_elements)
         return s1, s2
 
-    def _expandMask(self, rho_prime, kappa):
+    def _expand_mask_vector(self, rho_prime, kappa):
         elements = [
-            self._sample_mask_polynomial(rho_prime, i, kappa) for i in range(self.l)
+            self.R.sample_mask_polynomial(rho_prime, i, kappa, self.gamma_1)
+            for i in range(self.l)
         ]
-        return self.M(elements).transpose()
+        return self.M.vector(elements)
 
     @staticmethod
     def _pack_pk(rho, t1):
@@ -351,7 +164,7 @@ class Dilithium:
 
         matrix = []
         for poly_non_zero in non_zero_positions:
-            coeffs = [0 for _ in range(self.n)]
+            coeffs = [0 for _ in range(256)]
             for non_zero in poly_non_zero:
                 coeffs[non_zero] = 1
             matrix.append([self.R(coeffs)])
@@ -367,6 +180,9 @@ class Dilithium:
         return c_tilde, z, h
 
     def keygen(self):
+        """
+        Generates a public-private keyair
+        """
         # Random seed
         zeta = self.random_bytes(32)
 
@@ -376,15 +192,15 @@ class Dilithium:
         # Split bytes into suitible chunks
         rho, rho_prime, K = seed_bytes[:32], seed_bytes[32:96], seed_bytes[96:]
 
-        # Generate matrix A ∈ R^(kxl)
-        A = self._expandA(rho, is_ntt=True)
+        # Generate matrix A ∈ R^(kxl) in the NTT domain
+        A_hat = self._expand_matrix_from_seed(rho)
 
         # Generate the error vectors s1 ∈ R^l, s2 ∈ R^k
-        s1, s2 = self._expandS(rho_prime)
+        s1, s2 = self._expand_vector_from_seed(rho_prime)
         s1_hat = s1.to_ntt()
 
         # Matrix multiplication
-        t = (A @ s1_hat).from_ntt() + s2
+        t = (A_hat @ s1_hat).from_ntt() + s2
 
         t1, t0 = t.power_2_round(self.d)
 
@@ -396,11 +212,14 @@ class Dilithium:
         return pk, sk
 
     def sign(self, sk_bytes, m):
+        """
+        Generates a signature for a message m from a byte-encoded private key
+        """
         # unpack the secret key
         rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
 
-        # Generate matrix A ∈ R^(kxl)
-        A = self._expandA(rho, is_ntt=True)
+        # Generate matrix A ∈ R^(kxl) in the NTT domain
+        A_hat = self._expand_matrix_from_seed(rho)
 
         # Set seeds and nonce (kappa)
         mu = self._h(tr + m, 64)
@@ -414,13 +233,13 @@ class Dilithium:
 
         alpha = self.gamma_2 << 1
         while True:
-            y = self._expandMask(rho_prime, kappa)
+            y = self._expand_mask_vector(rho_prime, kappa)
             y_hat = y.to_ntt()
 
             # increment the nonce
             kappa += self.l
 
-            w = (A @ y_hat).from_ntt()
+            w = (A_hat @ y_hat).from_ntt()
 
             # Extract out both the high and low bits
             w1, w0 = w.decompose(alpha)
@@ -428,7 +247,7 @@ class Dilithium:
             # Create challenge polynomial
             w1_bytes = w1.bit_pack_w(self.gamma_2)
             c_tilde = self._h(mu + w1_bytes, 32)
-            c = self._sample_in_ball(c_tilde)
+            c = self.R.sample_in_ball(c_tilde, self.tau)
 
             # Store c in NTT form
             c = c.to_ntt()
@@ -447,27 +266,31 @@ class Dilithium:
 
             w0_minus_cs2_plus_ct0 = w0_minus_cs2 + c_t0
 
-            h = self._make_hint(w0_minus_cs2_plus_ct0, w1, alpha)
-            if self._sum_hint(h) > self.omega:
+            h = w0_minus_cs2_plus_ct0.make_hint(w1, alpha)
+            if h.sum_hint() > self.omega:
                 continue
 
             return self._pack_sig(c_tilde, z, h)
 
     def verify(self, pk_bytes, m, sig_bytes):
+        """
+        Verifies a signature for a message m from a byte encoded public key and
+        signature
+        """
         rho, t1 = self._unpack_pk(pk_bytes)
         c_tilde, z, h = self._unpack_sig(sig_bytes)
 
-        if self._sum_hint(h) > self.omega:
+        if h.sum_hint() > self.omega:
             return False
 
         if z.check_norm_bound(self.gamma_1 - self.beta):
             return False
 
-        A = self._expandA(rho, is_ntt=True)
+        A_hat = self._expand_matrix_from_seed(rho)
 
         tr = self._h(pk_bytes, 32)
         mu = self._h(tr + m, 64)
-        c = self._sample_in_ball(c_tilde)
+        c = self.R.sample_in_ball(c_tilde, self.tau)
 
         # Convert to NTT for computation
         c = c.to_ntt()
@@ -476,10 +299,10 @@ class Dilithium:
         t1 = t1.scale(1 << self.d)
         t1 = t1.to_ntt()
 
-        Az_minus_ct1 = (A @ z) - t1.scale(c)
+        Az_minus_ct1 = (A_hat @ z) - t1.scale(c)
         Az_minus_ct1 = Az_minus_ct1.from_ntt()
 
-        w_prime = self._use_hint(h, Az_minus_ct1, 2 * self.gamma_2)
+        w_prime = h.use_hint(Az_minus_ct1, 2 * self.gamma_2)
         w_prime_bytes = w_prime.bit_pack_w(self.gamma_2)
 
         return c_tilde == self._h(mu + w_prime_bytes, 32)
