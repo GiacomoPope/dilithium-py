@@ -70,8 +70,8 @@ if __name__ == "__main__":
     # I used 1000 calls for the README, but you might want to
     # shrink this down if you're playing
     count = 1000
-    # benchmark_dilithium(Dilithium2, "Dilithium2", count)
-    # benchmark_dilithium(Dilithium3, "Dilithium3", count)
-    # benchmark_dilithium(Dilithium5, "Dilithium5", count)
+    benchmark_dilithium(Dilithium2, "Dilithium2", count)
+    benchmark_dilithium(Dilithium3, "Dilithium3", count)
+    benchmark_dilithium(Dilithium5, "Dilithium5", count)
 
-    profile_dilithium(Dilithium2)
+    # profile_dilithium(Dilithium2)
