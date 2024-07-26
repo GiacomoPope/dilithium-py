@@ -135,10 +135,6 @@ class PolynomialRingDilithium(PolynomialRing):
                 coeffs[i] = c1
                 i += 1
 
-        # Remove the last byte if we ended up overfilling
-        if len(coeffs) > 256:
-            coeffs = coeffs[:256]
-
         return self(coeffs)
 
     def sample_mask_polynomial(self, rho_prime, i, kappa, gamma_1):
