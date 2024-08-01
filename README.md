@@ -77,10 +77,23 @@ deterministic CSRNG. The reference implementation uses
 AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](src/dilithium_py/drbg/ase256_ctr_drbg.py). 
 However, I have not implemented AES itself, instead I import this from `pycryptodome`.
 
-To install dependencies, run `pip -r install requirements`.
+To install dependencies, run `pip install -r requirements.txt`.
 
 If you're happy to use system randomness (`os.urandom`) then you don't need
 this dependency.
+
+#### `xoflib`
+
+There is an additional optional dependency of
+[`xoflib`](https://github.com/GiacomoPope/xoflib) which is a python package with
+bindings to many Rust implementations of eXtendable-Output Functions (XOFx). The
+creation of this package was inspired by this repository as Dilithium needs a streaming API from the shake XOFs which `hashlib` doesn't support.
+
+`xoflib` can be installed by running `pip install xoflib` or by installing from requirements as above.
+
+If you do not wish to install this dependency, then we include a small
+[`shake_wrapper`](src/dilithium_py/shake/shake_wrapper.py) to mimic `xoflib` but
+with a much higher memory consumption due to the limitations of `hashlib`.
 
 ## Using dilithium-py
 
@@ -126,12 +139,12 @@ The above example would also work with the other NIST levels
 
 Some very rough benchmarks to give an idea about performance:
 
-|  500 Iterations          | `ML_DSA_44`  | `ML_DSA_65`  | `ML_DSA_87`  |
+|  1000 Iterations         | `ML_DSA_44`  | `ML_DSA_65`  | `ML_DSA_87`  |
 |--------------------------|--------------|--------------|--------------|
-| `KeyGen()` Median Time   |  6 ms        | 10 ms        | 16 ms        |
-| `Sign()`   Median Time   |  29 ms       | 52 ms        | 61 ms        |
-| `Sign()`   Average Time  |  36 ms       | 64 ms        | 75 ms        |
-| `Verify()` Median Time   |  8 ms        | 12 ms        | 18 ms        |
+| `KeyGen()` Median Time   |  6 ms        | 10 ms        | 14 ms        |
+| `Sign()`   Median Time   |  29 ms       | 49 ms        | 59 ms        |
+| `Sign()`   Average Time  |  36 ms       | 62 ms        | 75 ms        |
+| `Verify()` Median Time   |  8 ms        | 11 ms        | 17 ms        |
 
 All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
 
@@ -177,12 +190,12 @@ The above example would also work with the other NIST levels
 
 Some very rough benchmarks to give an idea about performance:
 
-|  500 Iterations          | `Dilithium2`  | `Dilithium3`  | `Dilithium5`  |
+|  1000 Iterations         | `Dilithium2`  | `Dilithium3`  | `Dilithium5`  |
 |--------------------------|---------------|--------------|--------------|
-| `KeyGen()` Median Time   |  6 ms         | 10 ms        | 16 ms        |
+| `KeyGen()` Median Time   |  6 ms         |  9 ms        | 15 ms        |
 | `Sign()`   Median Time   |  27 ms        | 46 ms        | 58 ms        |
 | `Sign()`   Average Time  |  35 ms        | 58 ms        | 72 ms        |
-| `Verify()` Median Time   |  8 ms         | 12 ms        | 18 ms        |
+| `Verify()` Median Time   |  7 ms         | 11 ms        | 18 ms        |
 
 All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls.
 

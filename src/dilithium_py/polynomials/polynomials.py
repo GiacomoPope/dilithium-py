@@ -6,8 +6,12 @@ from ..utilities.utils import (
     decompose,
     check_norm_bound,
 )
-from ..shake.shake_wrapper import Shake128, Shake256
 from ..utilities.utils import make_hint, make_hint_optimised, use_hint
+
+try:
+    from xoflib import shake128, shake256
+except ImportError:
+    from ..shake.shake_wrapper import shake128, shake256
 
 
 class PolynomialRingDilithium(PolynomialRing):
@@ -53,11 +57,11 @@ class PolynomialRingDilithium(PolynomialRing):
                     return j
 
         # Initialise the XOF
-        Shake256.absorb(seed)
+        xof = shake256(seed)
 
         # Set the first 8 bytes for the sign, and leave the rest for
         # sampling.
-        sign_bytes = Shake256.read(8)
+        sign_bytes = xof.read(8)
         sign_int = int.from_bytes(sign_bytes, "little")
 
         # Set the list of coeffs to be 0
@@ -65,7 +69,7 @@ class PolynomialRingDilithium(PolynomialRing):
 
         # Now set tau values of coeffs to be ±1
         for i in range(256 - tau, 256):
-            j = rejection_sample(i, Shake256)
+            j = rejection_sample(i, xof)
             coeffs[i] = coeffs[j]
             coeffs[j] = 1 - 2 * (sign_int & 1)
             sign_int >>= 1
@@ -93,8 +97,8 @@ class PolynomialRingDilithium(PolynomialRing):
 
         # Initialise the XOF
         seed = rho + bytes([j, i])
-        Shake128.absorb(seed)
-        coeffs = [rejection_sample(Shake128) for _ in range(256)]
+        xof = shake128(seed)
+        coeffs = [rejection_sample(xof) for _ in range(256)]
         return self(coeffs, is_ntt=True)
 
     def rejection_bounded_poly(self, rho_prime, i, eta):
@@ -116,14 +120,14 @@ class PolynomialRingDilithium(PolynomialRing):
 
         # Initialise the XOF
         seed = rho_prime + int.to_bytes(i, 2, "little")
-        Shake256.absorb(seed)
+        xof = shake256(seed)
 
         # Sample bytes for all n coeffs
         i = 0
         coeffs = [0 for _ in range(256)]
         while i < 256:
             # Consider two values for each byte (top and bottom four bits)
-            j = Shake256.read(1)[0]
+            j = xof.read(1)[0]
 
             c0 = coefficient_from_half_byte(j % 16, eta)
             if c0 is not False:
@@ -151,7 +155,7 @@ class PolynomialRingDilithium(PolynomialRing):
 
         # Initialise the XOF
         seed = rho_prime + int.to_bytes(kappa + i, 2, "little")
-        xof_bytes = Shake256.digest(seed, total_bytes)
+        xof_bytes = shake256(seed).read(total_bytes)
         r = int.from_bytes(xof_bytes, "little")
         mask = (1 << bit_count) - 1
         coeffs = [gamma_1 - ((r >> bit_count * i) & mask) for i in range(self.n)]

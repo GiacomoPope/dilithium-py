@@ -1,6 +1,10 @@
 import os
 from ..modules.modules import ModuleDilithium
-from ..shake.shake_wrapper import Shake256
+
+try:
+    from xoflib import shake256
+except ImportError:
+    from ..shake.shake_wrapper import shake256
 
 
 class Dilithium:
@@ -56,7 +60,7 @@ class Dilithium:
         """
         H: B^*  -> B^*
         """
-        return Shake256.digest(input_bytes, length)
+        return shake256(input_bytes).read(length)
 
     def _expand_matrix_from_seed(self, rho):
         """

@@ -1,5 +1,5 @@
 from hashlib import shake_128, shake_256
-from dilithium_py.shake.shake_wrapper import Shake128, Shake256
+from dilithium_py.shake.shake_wrapper import shake128, shake256
 from Crypto.Hash.SHAKE128 import SHAKE128_XOF
 from Crypto.Hash.SHAKE256 import SHAKE256_XOF
 
@@ -22,12 +22,12 @@ class TestShakeHashlib(unittest.TestCase):
             self.assertEqual(shake_hashlib(absorb_bytes).digest(l), output)
 
     def test_hashlib_shake128(self):
-        self.hashlib_test_long_calls(Shake128, shake_128)
-        self.hashlib_test_many_calls(Shake128, shake_128)
+        self.hashlib_test_long_calls(shake128, shake_128)
+        self.hashlib_test_many_calls(shake128, shake_128)
 
     def test_hashlib_shake256(self):
-        self.hashlib_test_long_calls(Shake256, shake_256)
-        self.hashlib_test_many_calls(Shake256, shake_256)
+        self.hashlib_test_long_calls(shake256, shake_256)
+        self.hashlib_test_many_calls(shake256, shake_256)
 
 
 class TestShakeCrypto(unittest.TestCase):
@@ -40,5 +40,5 @@ class TestShakeCrypto(unittest.TestCase):
             self.assertEqual(Shake.read(chunk), ShakeCrypto.read(chunk))
 
     def test_pycryptodome_shake(self):
-        self.pycryptodome_test_read_chunks(Shake128, SHAKE128_XOF())
-        self.pycryptodome_test_read_chunks(Shake256, SHAKE256_XOF())
+        self.pycryptodome_test_read_chunks(shake128, SHAKE128_XOF())
+        self.pycryptodome_test_read_chunks(shake256, SHAKE256_XOF())
