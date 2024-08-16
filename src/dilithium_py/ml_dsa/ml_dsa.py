@@ -52,8 +52,8 @@ class ML_DSA:
             )
 
     """
-    H() uses Shake256 to hash data to 32 and 64 bytes in a 
-    few places in the code 
+    H() uses Shake256 to hash data to 32 and 64 bytes in a
+    few places in the code
     """
 
     @staticmethod
@@ -87,9 +87,9 @@ class ML_DSA:
         s2 = self.M.vector(s2_elements)
         return s1, s2
 
-    def _expand_mask_vector(self, rho_prime, kappa):
+    def _expand_mask_vector(self, rho, mu):
         elements = [
-            self.R.sample_mask_polynomial(rho_prime, i, kappa, self.gamma_1)
+            self.R.sample_mask_polynomial(rho, i, mu, self.gamma_1)
             for i in range(self.l)
         ]
         return self.M.vector(elements)
@@ -184,15 +184,14 @@ class ML_DSA:
         h = self._unpack_h(h_bytes)
         return c_tilde, z, h
 
-    def keygen(self):
+    def _keygen_internal(self, zeta):
         """
-        Generates a public-private keyair
+        Generates a public-private key pair from a seed following
+        Algorithm 6 (FIPS 204)
         """
-        # Random seed
-        zeta = self.random_bytes(32)
-
         # Expand with an XOF (SHAKE256)
-        seed_bytes = self._h(zeta, 128)
+        seed_domain_sep = zeta + bytes([self.k]) + bytes([self.l])
+        seed_bytes = self._h(seed_domain_sep, 128)
 
         # Split bytes into suitable chunks
         rho, rho_prime, K = seed_bytes[:32], seed_bytes[32:96], seed_bytes[96:]
@@ -202,9 +201,9 @@ class ML_DSA:
 
         # Generate the error vectors s1 ∈ R^l, s2 ∈ R^k
         s1, s2 = self._expand_vector_from_seed(rho_prime)
-        s1_hat = s1.to_ntt()
 
         # Matrix multiplication
+        s1_hat = s1.to_ntt()
         t = (A_hat @ s1_hat).from_ntt() + s2
 
         t1, t0 = t.power_2_round(self.d)
@@ -212,43 +211,39 @@ class ML_DSA:
         # Pack up the bytes
         pk = self._pack_pk(rho, t1)
         tr = self._h(pk, 64)
-
         sk = self._pack_sk(rho, K, tr, s1, s2, t0)
+
         return pk, sk
 
-    def sign(self, sk_bytes, m, deterministic=False):
+    def _sign_internal(self, sk_bytes, m, rnd):
         """
-        Generates a signature for a message m from a byte-encoded private key
+        Deterministic algorithm to generate a signature for a formatted message
+        M' following Algorithm 7 (FIPS 204)
         """
         # unpack the secret key
         rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
-
-        # Generate matrix A ∈ R^(kxl) in the NTT domain
-        A_hat = self._expand_matrix_from_seed(rho)
-
-        # Set seeds and nonce (kappa)
-        mu = self._h(tr + m, 64)
-        if deterministic:
-            rnd = bytes([0] * 32)
-        else:
-            rnd = self.random_bytes(32)
-        kappa = 0
-        rho_prime = self._h(K + rnd + mu, 64)
 
         # Precompute NTT representation
         s1_hat = s1.to_ntt()
         s2_hat = s2.to_ntt()
         t0_hat = t0.to_ntt()
 
+        # Generate matrix A ∈ R^(kxl) in the NTT domain
+        A_hat = self._expand_matrix_from_seed(rho)
+
+        # Set seeds and nonce (kappa)
+        mu = self._h(tr + m, 64)
+        rho_prime = self._h(K + rnd + mu, 64)
+
+        kappa = 0
         alpha = self.gamma_2 << 1
         while True:
             y = self._expand_mask_vector(rho_prime, kappa)
             y_hat = y.to_ntt()
+            w = (A_hat @ y_hat).from_ntt()
 
             # increment the nonce
             kappa += self.l
-
-            w = (A_hat @ y_hat).from_ntt()
 
             # NOTE: there is an optimisation possible where both the high and
             # low bits of w are extracted here, which speeds up some checks
@@ -262,8 +257,7 @@ class ML_DSA:
             # Create challenge polynomial
             w1_bytes = w1.bit_pack_w(self.gamma_2)
             c_tilde = self._h(mu + w1_bytes, self.c_tilde_bytes)
-            c_seed_bytes = c_tilde[:32]
-            c = self.R.sample_in_ball(c_seed_bytes, self.tau)
+            c = self.R.sample_in_ball(c_tilde, self.tau)
             c_hat = c.to_ntt()
 
             # NOTE: unlike FIPS 204 we start again as soon as a vector
@@ -288,14 +282,13 @@ class ML_DSA:
 
             return self._pack_sig(c_tilde, z, h)
 
-    def verify(self, pk_bytes, m, sig_bytes):
+    def _verify_internal(self, pk_bytes, m, sig_bytes):
         """
-        Verifies a signature for a message m from a byte encoded public key and
-        signature
+        Internal function to verify a signature sigma for a formatted message M'
+        following Algorithm 8 (FIPS 204)
         """
         rho, t1 = self._unpack_pk(pk_bytes)
         c_tilde, z, h = self._unpack_sig(sig_bytes)
-        c_seed_bytes = c_tilde[:32]
 
         if h.sum_hint() > self.omega:
             return False
@@ -307,7 +300,7 @@ class ML_DSA:
 
         tr = self._h(pk_bytes, 64)
         mu = self._h(tr + m, 64)
-        c = self.R.sample_in_ball(c_seed_bytes, self.tau)
+        c = self.R.sample_in_ball(c_tilde, self.tau)
 
         # Convert to NTT for computation
         c = c.to_ntt()
@@ -323,3 +316,49 @@ class ML_DSA:
         w_prime_bytes = w_prime.bit_pack_w(self.gamma_2)
 
         return c_tilde == self._h(mu + w_prime_bytes, self.c_tilde_bytes)
+
+    def keygen(self):
+        """
+        Generates a public-private key pair following
+        Algorithm 1 (FIPS 204)
+        """
+        zeta = self.random_bytes(32)
+        pk, sk = self._keygen_internal(zeta)
+        return pk, sk
+
+    def sign(self, sk_bytes, m, ctx=b"", deterministic=False):
+        """
+        Generates an ML-DSA signature following
+        Algorithm 2 (FIPS 204)
+        """
+        if len(ctx) > 255:
+            raise ValueError(
+                f"ctx bytes must have length at most 255, ctx has length {len(ctx) = }"
+            )
+
+        if deterministic:
+            rnd = bytes([0] * 32)
+        else:
+            rnd = self.random_bytes(32)
+
+        # Format the message using the context
+        m_prime = bytes([0]) + bytes([len(ctx)]) + ctx + m
+
+        # Compute the signature of m_prime
+        sig_bytes = self._sign_internal(sk_bytes, m_prime, rnd)
+        return sig_bytes
+
+    def verify(self, pk_bytes, m, sig_bytes, ctx=b""):
+        """
+        Verifies a signature sigma for a message M following
+        Algorithm 3 (FIPS 204)
+        """
+        if len(ctx) > 255:
+            raise ValueError(
+                f"ctx bytes must have length at most 255, ctx has length {len(ctx) = }"
+            )
+
+        # Format the message using the context
+        m_prime = bytes([0]) + bytes([len(ctx)]) + ctx + m
+
+        return self._verify_internal(pk_bytes, m_prime, sig_bytes)

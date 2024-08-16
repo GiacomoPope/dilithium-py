@@ -1,7 +1,7 @@
 import unittest
 import os
+import json
 from dilithium_py.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
-from dilithium_py.drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 
 
 class TestMLDSA(unittest.TestCase):
@@ -82,146 +82,84 @@ class TestMLDSADeterministic(unittest.TestCase):
         self.generic_test_ml_dsa(ML_DSA_87)
 
 
-def read_kat_data(file_name, deterministic):
-    if deterministic:
-        params = 9
-    else:
-        params = 10
-    data_blocks = []
-    with open(file_name) as f:
-        for _ in range(100):
-            data_blocks.append("".join([next(f) for _ in range(params)]))
-    return data_blocks
+class TestML_DSA_KAT(unittest.TestCase):
+    """
+    Test ML-DSA against test vectors collected from
+    https://github.com/usnistgov/ACVP-Server/releases/tag/v1.1.0.35
+    """
 
+    def generic_keygen_kat(self, ML_DSA, index):
+        with open("assets/ML-DSA-keyGen-FIPS204/internalProjection.json") as f:
+            data = json.load(f)
+        kat_data = data["testGroups"][index]["tests"]
 
-def parse_kat_data(data_blocks):
-    parsed_data = {}
-    for block in data_blocks:
-        block_data = block.split("\n")[:-1]
-        count, xi, rng, seed, pk, sk, msg, mlen, sm, smlen = [
-            line.split(" = ")[-1] for line in block_data
-        ]
-        parsed_data[int(count)] = {
-            "xi": bytes.fromhex(xi),
-            "rng": bytes.fromhex(rng),
-            "seed": bytes.fromhex(seed),
-            "pk": bytes.fromhex(pk),
-            "sk": bytes.fromhex(sk),
-            "msg": bytes.fromhex(msg),
-            "mlen": int(mlen),
-            "sm": bytes.fromhex(sm),
-            "smlen": int(smlen),
-        }
-    return parsed_data
+        for test in kat_data:
+            seed = bytes.fromhex(test["seed"])
+            pk_kat = bytes.fromhex(test["pk"])
+            sk_kat = bytes.fromhex(test["sk"])
 
+            pk, sk = ML_DSA._keygen_internal(seed)
+            self.assertEqual(pk, pk_kat)
+            self.assertEqual(sk, sk_kat)
 
-def parse_kat_data_det(data_blocks):
-    parsed_data = {}
-    for block in data_blocks:
-        block_data = block.split("\n")[:-1]
-        count, xi, seed, pk, sk, msg, mlen, sm, smlen = [
-            line.split(" = ")[-1] for line in block_data
-        ]
-        parsed_data[int(count)] = {
-            "xi": bytes.fromhex(xi),
-            "seed": bytes.fromhex(seed),
-            "pk": bytes.fromhex(pk),
-            "sk": bytes.fromhex(sk),
-            "msg": bytes.fromhex(msg),
-            "mlen": int(mlen),
-            "sm": bytes.fromhex(sm),
-            "smlen": int(smlen),
-        }
-    return parsed_data
-
-
-class TestKnownTestValuesMLDSA(unittest.TestCase):
-    def generic_test_ml_dsa(self, ML_DSA, file_name, deterministic=False):
-
-        # https://github.com/post-quantum-cryptography/KAT/tree/main/MLDSA
-        entropy_input = bytes.fromhex(
-            "60496cd0a12512800a79161189b055ac3996ad24e578d3c5fc57c1"
-            "e60fa2eb4e550d08e51e9db7b67f1a616681d9182d"
-        )
-        drbg = AES256_CTR_DRBG(entropy_input)
-
-        # extract data from KAT
-        kat_data_blocks = read_kat_data(file_name, deterministic)
+    def generic_sign_kat(self, ML_DSA, index, deterministic=False):
+        with open("assets/ML-DSA-sigGen-FIPS204/internalProjection.json") as f:
+            data = json.load(f)
         if deterministic:
-            parsed_data = parse_kat_data_det(kat_data_blocks)
+            kat_data = data["testGroups"][2 * index]["tests"]
         else:
-            parsed_data = parse_kat_data(kat_data_blocks)
+            kat_data = data["testGroups"][2 * index + 1]["tests"]
 
-        for count in range(100):
-            data = parsed_data[count]
+        for test in kat_data:
+            sk_kat = bytes.fromhex(test["sk"])
+            msg_kat = bytes.fromhex(test["message"])
+            sig_kat = bytes.fromhex(test["signature"])
 
-            seed = drbg.random_bytes(48)
-            self.assertEqual(data["seed"], seed)
+            if deterministic:
+                rng_kat = bytes([0]) * 32
+            else:
+                rng_kat = bytes.fromhex(test["rng"])
 
-            msg_len = data["mlen"]
+            sig = ML_DSA._sign_internal(sk_kat, msg_kat, rng_kat)
+            self.assertEqual(sig, sig_kat)
 
-            # TODO: how is this message generated, it's not from
-            # drbg.random_bytes(msg_len) apparently...
-            # msg = drbg.random_bytes(msg_len)
-            # self.assertEqual(data["msg"], msg)
+    def generic_verify_kat(self, ML_DSA, index):
+        with open("assets/ML-DSA-sigVer-FIPS204/internalProjection.json") as f:
+            data = json.load(f)
+        pk_kat = bytes.fromhex(data["testGroups"][index]["pk"])
+        kat_data = data["testGroups"][index]["tests"]
 
-            # Test generation of internal randomness
-            ML_DSA.set_drbg_seed(seed)
-            xi = ML_DSA.random_bytes(32)
-            self.assertEqual(data["xi"], xi)
-            if not deterministic:
-                rng = ML_DSA.random_bytes(32)
-                self.assertEqual(data["rng"], rng)
+        for test in kat_data:
+            check_kat = test["testPassed"]
+            msg_kat = bytes.fromhex(test["message"])
+            sig_kat = bytes.fromhex(test["signature"])
 
-            # Test ML DSA, must reset seed from above
-            ML_DSA.set_drbg_seed(seed)
-            pk, sk = ML_DSA.keygen()
+            check = ML_DSA._verify_internal(pk_kat, msg_kat, sig_kat)
+            self.assertEqual(check, check_kat)
 
-            # Check that the keygen matches
-            self.assertEqual(data["pk"], pk)
-            self.assertEqual(data["sk"], sk)
+    def test_ML_DSA_44_keygen(self):
+        self.generic_keygen_kat(ML_DSA_44, 0)
 
-            # Check that the signature matches
-            sm_KAT = data["sm"]
-            sig_KAT = sm_KAT[:-msg_len]
+    def test_ML_DSA_65_keygen(self):
+        self.generic_keygen_kat(ML_DSA_65, 1)
 
-            # sm_KAT has message as the last mlen bytes
-            self.assertEqual(data["msg"], sm_KAT[-msg_len:])
+    def test_ML_DSA_87_keygen(self):
+        self.generic_keygen_kat(ML_DSA_87, 2)
 
-            # Ensure that a generated signature matches
-            # the one extracted from the KAT
-            sig = ML_DSA.sign(sk, data["msg"], deterministic=deterministic)
-            self.assertEqual(sig, sig_KAT)
+    def test_ML_DSA_44_sign(self):
+        self.generic_sign_kat(ML_DSA_44, 0, deterministic=True)
 
-            # Finally, make sure that the signature is
-            # valid for the message
-            verify_KAT = ML_DSA.verify(pk, data["msg"], sig)
-            self.assertTrue(verify_KAT)
+    def test_ML_DSA_65_sign(self):
+        self.generic_sign_kat(ML_DSA_65, 1, deterministic=True)
 
-    def test_ml_dsa_44(self):
-        self.generic_test_ml_dsa(ML_DSA_44, "assets/kat_MLDSA_44_hedged.rsp")
+    def test_ML_DSA_87_sign(self):
+        self.generic_sign_kat(ML_DSA_87, 2, deterministic=True)
 
-    def test_ml_dsa_65(self):
-        self.generic_test_ml_dsa(ML_DSA_65, "assets/kat_MLDSA_65_hedged.rsp")
+    def test_ML_DSA_44_verify(self):
+        self.generic_verify_kat(ML_DSA_44, 0)
 
-    def test_ml_dsa_87(self):
-        self.generic_test_ml_dsa(ML_DSA_87, "assets/kat_MLDSA_87_hedged.rsp")
+    def test_ML_DSA_65_verify(self):
+        self.generic_verify_kat(ML_DSA_65, 1)
 
-    def test_ml_dsa_44_det(self):
-        self.generic_test_ml_dsa(
-            ML_DSA_44, "assets/kat_MLDSA_44_det.rsp", deterministic=True
-        )
-
-    def test_ml_dsa_65_det(self):
-        self.generic_test_ml_dsa(
-            ML_DSA_65, "assets/kat_MLDSA_65_det.rsp", deterministic=True
-        )
-
-    def test_ml_dsa_87_det(self):
-        self.generic_test_ml_dsa(
-            ML_DSA_87, "assets/kat_MLDSA_87_det.rsp", deterministic=True
-        )
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_ML_DSA_87_verify(self):
+        self.generic_verify_kat(ML_DSA_87, 2)
