@@ -126,7 +126,6 @@ class TestDilithiumDRBG(unittest.TestCase):
 
 class TestKnownTestValuesDilithium(unittest.TestCase):
     def generic_test_dilithium(self, Dilithium, file_name):
-
         entropy_input = bytes([i for i in range(48)])
         drbg = AES256_CTR_DRBG(entropy_input)
 

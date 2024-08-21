@@ -33,9 +33,9 @@ def profile_dilithium(Dilithium):
 
 def benchmark_dilithium(Dilithium, name, count):
     # Banner
-    print(f"-" * 27)
+    print("-" * 27)
     print(f"  {name} | ({count} calls)")
-    print(f"-" * 27)
+    print("-" * 27)
 
     fails = 0
     keygen_times = []
@@ -68,10 +68,8 @@ def benchmark_dilithium(Dilithium, name, count):
 
 if __name__ == "__main__":
     # I used 1000 calls for the README, but you might want to
-    # shrink this down if you're playing
+    # shrink this down if you're experimenting
     count = 1000
-    # benchmark_dilithium(Dilithium2, "Dilithium2", count)
-    # benchmark_dilithium(Dilithium3, "Dilithium3", count)
-    # benchmark_dilithium(Dilithium5, "Dilithium5", count)
-
-    profile_dilithium(Dilithium2)
+    benchmark_dilithium(Dilithium2, "Dilithium2", count)
+    benchmark_dilithium(Dilithium3, "Dilithium3", count)
+    benchmark_dilithium(Dilithium5, "Dilithium5", count)

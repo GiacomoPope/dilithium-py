@@ -33,9 +33,9 @@ def profile_ml_dsa(ML_DSA):
 
 def benchmark_ml_dsa(ML_DSA, name, count):
     # Banner
-    print(f"-" * 27)
+    print("-" * 27)
     print(f"  {name} | ({count} calls)")
-    print(f"-" * 27)
+    print("-" * 27)
 
     fails = 0
     keygen_times = []
@@ -68,7 +68,7 @@ def benchmark_ml_dsa(ML_DSA, name, count):
 
 if __name__ == "__main__":
     # I used 1000 calls for the README, but you might want to
-    # shrink this down if you're playing
+    # shrink this down if you're experimenting
     count = 1000
     benchmark_ml_dsa(ML_DSA_44, "ML_DSA_44", count)
     benchmark_ml_dsa(ML_DSA_65, "ML_DSA_65", count)
