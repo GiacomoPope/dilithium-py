@@ -35,6 +35,15 @@ written so that reading though the pseudocode of the
 [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
 closely matches the code which we use within `dilithium.py` and supporting files.
 
+## Installation
+
+This package is available as `dilithium-py` on
+[PyPI](https://pypi.org/project/dilithium-py/):
+
+```
+pip install dilithium-py
+```
+
 ## History of this Repository
 
 This work started by simply implementing Dilithium for fun, however after NIST
