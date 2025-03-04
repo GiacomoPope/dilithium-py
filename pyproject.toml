@@ -1,3 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dilithium-py"
+version = "1.0.0"
+requires-python = ">= 3.9"
+description = "A pure python implementation of ML-DSA (FIPS 204)"
+readme = "README.md"
+classifiers = [
+    "Topic :: Security :: Cryptography",
+    "Programming Language :: Python :: 3",
+]
+license = "MIT"
+
+[project.urls]
+Homepage = "https://github.com/GiacomoPope/dilithium-py"
+Issues = "https://github.com/GiacomoPope/dilithium-py/issues"
+
 [tool.ruff.lint]
 # Avoid enforcing Ambiguous variable name (`E741`)
 ignore = ["E741"]
