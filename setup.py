@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="dilithium-py",
-    version="1.0.1",
+    version="1.0.2",
     python_requires=">=3.9",
     description="A pure python implementation of ML-DSA (FIPS 204)",
     long_description=open("README.md").read(),

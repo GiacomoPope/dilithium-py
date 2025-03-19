@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dilithium-py"
-version = "1.0.1"
+version = "1.0.2"
 requires-python = ">= 3.9"
 description = "A pure python implementation of ML-DSA (FIPS 204)"
 readme = "README.md"
