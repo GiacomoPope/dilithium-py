@@ -13,5 +13,5 @@ setup(
     ],
     license="MIT",
     url="https://github.com/GiacomoPope/dilithium-py",
-    install_requires=["pycryptodome"],
+    install_requires=["pycryptodome", "xoflib"],
 )
