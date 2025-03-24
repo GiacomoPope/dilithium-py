@@ -13,25 +13,38 @@ class TestMLDSA(unittest.TestCase):
     def generic_test_ml_dsa(self, ML_DSA, count=5):
         for _ in range(count):
             msg = b"Signed by ML_DSA" + os.urandom(16)
+            ctx = os.urandom(128)
 
             # Perform signature process
             pk, sk = ML_DSA.keygen()
-            sig = ML_DSA.sign(sk, msg)
-            check_verify = ML_DSA.verify(pk, msg, sig)
+            sig = ML_DSA.sign(sk, msg, ctx=ctx)
+            check_verify = ML_DSA.verify(pk, msg, sig, ctx=ctx)
+
+            # Sign with external_mu instead
+            external_mu = ML_DSA.prehash_external_mu(pk, msg, ctx=ctx)
+            sig_external_mu = ML_DSA.sign_external_mu(sk, external_mu)
+            check_external_mu = ML_DSA.verify(pk, msg, sig_external_mu, ctx=ctx)
 
             # Generate some fail cases
             pk_bad, _ = ML_DSA.keygen()
-            check_wrong_pk = ML_DSA.verify(pk_bad, msg, sig)
-            check_wrong_msg = ML_DSA.verify(pk, b"", sig)
+            check_wrong_pk = ML_DSA.verify(pk_bad, msg, sig, ctx=ctx)
+            check_wrong_msg = ML_DSA.verify(pk, b"", sig, ctx=ctx)
+            check_no_ctx = ML_DSA.verify(pk, msg, sig)
 
             # Check that signature works
             self.assertTrue(check_verify)
+
+            # Check that external_mu also works
+            self.assertTrue(check_external_mu)
 
             # Check changing the key breaks verify
             self.assertFalse(check_wrong_pk)
 
             # Check changing the message breaks verify
             self.assertFalse(check_wrong_msg)
+
+            # Check removing the context breaks verify
+            self.assertFalse(check_no_ctx)
 
     def test_ml_dsa_44(self):
         self.generic_test_ml_dsa(ML_DSA_44)
@@ -52,25 +65,40 @@ class TestMLDSADeterministic(unittest.TestCase):
     def generic_test_ml_dsa(self, ML_DSA, count=5):
         for _ in range(count):
             msg = b"Signed by ML_DSA" + os.urandom(16)
+            ctx = os.urandom(128)
 
             # Perform signature process
             pk, sk = ML_DSA.keygen()
-            sig = ML_DSA.sign(sk, msg, deterministic=True)
-            check_verify = ML_DSA.verify(pk, msg, sig)
+            sig = ML_DSA.sign(sk, msg, ctx=ctx, deterministic=True)
+            check_verify = ML_DSA.verify(pk, msg, sig, ctx=ctx)
+
+            # Sign with external_mu instead
+            external_mu = ML_DSA.prehash_external_mu(pk, msg, ctx=ctx)
+            sig_external_mu = ML_DSA.sign_external_mu(
+                sk, external_mu, deterministic=True
+            )
+            check_external_mu = ML_DSA.verify(pk, msg, sig_external_mu, ctx=ctx)
 
             # Generate some fail cases
             pk_bad, _ = ML_DSA.keygen()
-            check_wrong_pk = ML_DSA.verify(pk_bad, msg, sig)
-            check_wrong_msg = ML_DSA.verify(pk, b"", sig)
+            check_wrong_pk = ML_DSA.verify(pk_bad, msg, sig, ctx=ctx)
+            check_wrong_msg = ML_DSA.verify(pk, b"", sig, ctx=ctx)
+            check_no_ctx = ML_DSA.verify(pk, msg, sig)
 
             # Check that signature works
             self.assertTrue(check_verify)
+
+            # Check that external_mu also works
+            self.assertTrue(check_external_mu)
 
             # Check changing the key breaks verify
             self.assertFalse(check_wrong_pk)
 
             # Check changing the message breaks verify
             self.assertFalse(check_wrong_msg)
+
+            # Check removing the context breaks verify
+            self.assertFalse(check_no_ctx)
 
     def test_ml_dsa_44(self):
         self.generic_test_ml_dsa(ML_DSA_44)
