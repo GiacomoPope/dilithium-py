@@ -215,13 +215,13 @@ class ML_DSA:
 
         return pk, sk
 
-    def _sign_internal(self, sk_bytes, m, rnd, external_mu=None):
+    def _sign_internal(self, sk_bytes, m, rnd, external_mu=False):
         """
         Deterministic algorithm to generate a signature for a formatted message
         M' following Algorithm 7 (FIPS 204)
 
-        Optionally allows for a pre-hashed message using `prehash_external_mu()`
-        When `external_mu` is not `None`, then the message `m` must be `None`
+        When `external_mu` is `True`, the message `m` is interpreted instead as
+        the pre-hashed message `mu = prehash_external_mu()`
         """
         # unpack the secret key
         rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
@@ -235,13 +235,10 @@ class ML_DSA:
         A_hat = self._expand_matrix_from_seed(rho)
 
         # Set seeds and nonce (kappa)
-        if external_mu is None:
-            mu = self._h(tr + m, 64)
+        if external_mu:
+            mu = m
         else:
-            # NOTE: when using external mu, the validation of the length
-            # of external_mu is handled by the function sign_external_mu
-            assert m is None, "Signing using external mu, message will be ignored"
-            mu = external_mu
+            mu = self._h(tr + m, 64)
         rho_prime = self._h(K + rnd + mu, 64)
 
         kappa = 0
@@ -383,7 +380,7 @@ class ML_DSA:
     def prehash_external_mu(self, pk_bytes, m, ctx=b""):
         """
         Prehash the message `m` with context `ctx` together with
-        the public key for use with `sign_external_mu()`
+        the public key. For use with `sign_external_mu()`
         """
         # Ensure the length of the context is as expected
         if len(ctx) > 255:
@@ -400,15 +397,15 @@ class ML_DSA:
 
         return mu
 
-    def sign_external_mu(self, sk_bytes, external_mu, deterministic=False):
+    def sign_external_mu(self, sk_bytes, mu, deterministic=False):
         """
-        Generates an ML-DSA signature of a message m given the prehash
-        of the message `m` with an optional context
+        Generates an ML-DSA signature of a message given the prehash
+        mu = H(H(pk), M')
         """
         # Ensure the length of the context is as expected
-        if len(external_mu) != 64:
+        if len(mu) != 64:
             raise ValueError(
-                f"mu bytes must have length 64, mu has length {len(external_mu) = }"
+                f"mu bytes must have length 64, mu has length {len(mu) = }"
             )
 
         if deterministic:
@@ -416,7 +413,7 @@ class ML_DSA:
         else:
             rnd = self.random_bytes(32)
 
-        # Compute the signature given external mu, we explicitly set the message
-        # to None
-        sig_bytes = self._sign_internal(sk_bytes, None, rnd, external_mu)
+        # Compute the signature given external mu, we set the external_mu
+        # to True
+        sig_bytes = self._sign_internal(sk_bytes, mu, rnd, external_mu=True)
         return sig_bytes
