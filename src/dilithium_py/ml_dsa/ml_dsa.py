@@ -325,6 +325,23 @@ class ML_DSA:
         zeta = self.random_bytes(32)
         pk, sk = self._keygen_internal(zeta)
         return pk, sk
+    
+    def key_derive(self, seed):
+        """
+        Derive a verification key and corresponding signing key
+        following the approach from Section 6.1 (FIPS 204)
+        with storage of the ``seed`` value for later expansion.
+
+        ``seed`` is a byte-encoded concatenation of the ``xi`` value.
+
+        :return: Tuple with verification key and signing key.
+        :rtype: tuple(bytes, bytes)
+        """
+        if len(seed) != 32:
+            raise ValueError("The seed must be 32 bytes long")
+
+        pk, sk = self._keygen_internal(seed)
+        return (pk, sk)
 
     def sign(self, sk_bytes, m, ctx=b"", deterministic=False):
         """
