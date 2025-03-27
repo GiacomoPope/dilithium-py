@@ -325,7 +325,7 @@ class ML_DSA:
         zeta = self.random_bytes(32)
         pk, sk = self._keygen_internal(zeta)
         return pk, sk
-    
+
     def key_derive(self, seed):
         """
         Derive a verification key and corresponding signing key

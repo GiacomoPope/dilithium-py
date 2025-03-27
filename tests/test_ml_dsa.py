@@ -136,11 +136,10 @@ class TestMLDSADeterministic(unittest.TestCase):
                 92a70825837b59ba6cb7d4e56b0a87c203862ae8f315ba5925e8edefa679369a
                 2202766151f16a965f9f81ece76cc070b55869e4db9784cf05c830b3242c8312
             """
-            )
+        )
 
         self.assertEqual(len(pk), len(exp_pk))
         self.assertEqual(pk, exp_pk)
-
 
     # test vectors copied from
     # https://datatracker.ietf.org/doc/html/draft-ietf-lamps-dilithium-certificates-07
@@ -216,7 +215,6 @@ class TestMLDSADeterministic(unittest.TestCase):
         self.assertEqual(len(pk), len(exp_pk))
         self.assertEqual(pk, exp_pk)
 
-    
     # test vectors copied from
     # https://datatracker.ietf.org/doc/html/draft-ietf-lamps-dilithium-certificates-07
     def test_derive_from_seed_ML_DSA_87(self):
@@ -310,6 +308,7 @@ class TestMLDSADeterministic(unittest.TestCase):
 
         self.assertEqual(len(pk), len(exp_pk))
         self.assertEqual(pk, exp_pk)
+
 
 class TestML_DSA_KAT(unittest.TestCase):
     """
