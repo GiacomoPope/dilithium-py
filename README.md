@@ -210,6 +210,27 @@ All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls.
 
 ## Discussion of Implementation
 
+### External Mu
+
+Within FIPS 204, there is the option when signing for the value $\mu = H(H(\textsf{pk}) || M')$ to be computed outside of the main signing algorithm and instead be passed into the signature as explicit input. Notice that $\mu$ is formed from only public data, and allows signing a fixed sized (hashed) message (64 bytes) rather than an arbitrary sized message $M'$.
+
+An API which signs given $\mu$ rather than a message $m$ is known as "external mu ML-DSA" and is a popular choice over Hash-ML-DSA due to the fact that both "pure" and external mu ML-DSA can be verified with the same method, where as HASH-ML-DSA necessarily requires a separate verification function leading to complications.
+
+Following Appendix D of the [lamps dilithium signature draft](https://datatracker.ietf.org/doc/html/draft-ietf-lamps-dilithium-certificates-07) we additionally offer the external mu API by exposing two additional methods.
+
+```py
+>>> from dilithium_py.ml_dsa import ML_DSA_44
+>>>
+>>> # Example of signing with external mu
+>>> pk, sk = ML_DSA_44.keygen()
+>>> msg = b"Your message signed by ML_DSA"
+>>> mu = ML_DSA_44.prehash_external_mu(pk, msg)
+>>> sig = ML_DSA_44.sign_external_mu(sk, mu)
+>>> assert ML_DSA_44.verify(pk, msg, sig)
+```
+
+The method `prehash_external_mu(pk, m)` takes as input the public data and computes the prehash `mu`. This is then passed to a new signing API which anticipates $\mu$ instead of the message itself. To verify this signature, we can use the regular method for verification.
+
 ### Optimising decomposition and making hints
 
 You may notice that ML DSA has marginally slower signing than the reported
