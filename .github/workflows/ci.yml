@@ -7,37 +7,21 @@ on:
   pull_request:
 
 jobs:
-  code-format:
+  lint_check_ruff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
         with:
-          fetch-depth: 10
-      - name: Verify git status
-        run: |
-          git status
-          git remote -v
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+          args: "check"
+
+  lint_format_ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: "3.12"
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
-      - name: Display installed python package versions
-        run: |
-          pip list || :
-      - name: Install build dependencies
-        run: |
-          pip install -r requirements.txt
-      - name: Install black
-        run: |
-          pip install black==24.4.2
-      - name: Display installed python package versions
-        run: |
-          pip list || :
-      - name: Check formatting
-        run: |
-          black --check .
+          args: "format --check"
 
   test:
     runs-on: ${{ matrix.os }}
