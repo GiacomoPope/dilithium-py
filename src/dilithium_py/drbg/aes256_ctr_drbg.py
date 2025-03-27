@@ -30,7 +30,7 @@ class AES256_CTR_DRBG:
         self.__ctr_drbg_update(seed_material)
         self.reseed_ctr = 1
 
-    def __check_entropy_input(self, entropy_input: bytes) -> bytes:
+    def __check_entropy_input(self, entropy_input: Optional[bytes] = None) -> bytes:
         """
         If no entropy given, us os.urandom, else
         check that the input is of the right length.
