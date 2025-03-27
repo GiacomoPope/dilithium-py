@@ -60,9 +60,9 @@ def benchmark_ml_dsa(ML_DSA, name, count):
             fails += 1
 
     print(f"Keygen median: {round(median(keygen_times), 3)}")
-    print(f"Sign median: {round(median(sign_times),3)}")
-    print(f"Sign average: {round(mean(sign_times),3)}")
-    print(f"Verify median: {round(median(verify_times),3)}")
+    print(f"Sign median: {round(median(sign_times), 3)}")
+    print(f"Sign average: {round(mean(sign_times), 3)}")
+    print(f"Verify median: {round(median(verify_times), 3)}")
     print(f"Fails: {fails}")
 
 
