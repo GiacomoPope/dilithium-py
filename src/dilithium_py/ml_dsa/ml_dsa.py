@@ -22,6 +22,7 @@ class ML_DSA:
 
         self.M = ModuleDilithium()
         self.R = self.M.ring
+        self.oid = parameter_set["oid"] if "oid" in parameter_set else None
 
         # Use system randomness by default, for deterministic randomness
         # use the method `set_drbg_seed()`
@@ -123,10 +124,25 @@ class ML_DSA:
     def _pack_sig(self, c_tilde, z, h):
         return c_tilde + z.bit_pack_z(self.gamma_1) + self._pack_h(h)
 
+    def _pk_size(self):
+        return 32 + 32 * self.k * 10
+
     def _unpack_pk(self, pk_bytes):
+        if len(pk_bytes) != self._pk_size():
+            raise ValueError("PK packed bytes is of the wrong length")
         rho, t1_bytes = pk_bytes[:32], pk_bytes[32:]
         t1 = self.M.bit_unpack_t1(t1_bytes, self.k, 1)
         return rho, t1
+
+    def _sk_size(self):
+        if self.eta == 2:
+            s_bytes = 96
+        else:
+            s_bytes = 128
+        s1_len = s_bytes * self.l
+        s2_len = s_bytes * self.k
+        t0_len = 416 * self.k
+        return 2 * 32 + 64 + s1_len + s2_len + t0_len
 
     def _unpack_sk(self, sk_bytes):
         if self.eta == 2:
@@ -136,7 +152,7 @@ class ML_DSA:
         s1_len = s_bytes * self.l
         s2_len = s_bytes * self.k
         t0_len = 416 * self.k
-        if len(sk_bytes) != 2 * 32 + 64 + s1_len + s2_len + t0_len:
+        if len(sk_bytes) != self._sk_size():
             raise ValueError("SK packed bytes is of the wrong length")
 
         # Split bytes between seeds and vectors
@@ -403,6 +419,11 @@ class ML_DSA:
         if len(ctx) > 255:
             raise ValueError(
                 f"ctx bytes must have length at most 255, ctx has length {len(ctx) = }"
+            )
+        if len(pk_bytes) != self._pk_size():
+            raise ValueError(
+                f"Public key size doesn't match this ML-DSA object parameters,"
+                f"received {len(pk_bytes) = }, expected: {self._pk_size()}"
             )
 
         # Format the message using the context
