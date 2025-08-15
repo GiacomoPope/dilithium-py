@@ -450,7 +450,7 @@ class ML_DSA:
 
         # Ensure the public key matches the hash within the secret key
         if tr != self._h(pk_bytes, 64):
-            raise ValueError("maleformed secret key")
+            raise ValueError("malformed secret key")
 
         return pk_bytes
 
