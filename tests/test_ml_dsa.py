@@ -31,6 +31,12 @@ class TestMLDSA(unittest.TestCase):
             check_wrong_msg = ML_DSA.verify(pk, b"", sig, ctx=ctx)
             check_no_ctx = ML_DSA.verify(pk, msg, sig)
 
+            # Generate the public key directly from the secret key
+            recovered_pk = ML_DSA.pk_from_sk(sk)
+
+            # Check that recovering the pk works
+            self.assertEqual(pk, recovered_pk)
+
             # Check that signature works
             self.assertTrue(check_verify)
 

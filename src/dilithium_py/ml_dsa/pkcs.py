@@ -266,10 +266,10 @@ def sk_from_der(enc_key):
     if not expanded:
         pk, expanded = ml_dsa.key_derive(seed)
 
-    if not pk and seed:
-        # deriving verifying key from expanded key in ML-DSA is non-trivial
-        # do that only for encodings that include the seed
-        pk, _ = ml_dsa.key_derive(seed)
+    if not pk:
+        # If we reach here, we need to compute the public key
+        # directly from the secret key bytes
+        pk = ml_dsa.pk_from_sk(expanded)
 
     return ml_dsa, expanded, seed, pk
 

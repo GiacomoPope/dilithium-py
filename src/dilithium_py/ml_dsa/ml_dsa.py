@@ -421,6 +421,40 @@ class ML_DSA:
         return self._verify_internal(pk_bytes, m_prime, sig_bytes)
 
     """
+    The following additional function follows an outline from:
+        https://github.com/aws/aws-lc/pull/2142
+    which computes pk_bytes when only the sk_bytes are known.
+    """
+
+    def pk_from_sk(self, sk_bytes: bytes) -> bytes:
+        """
+        Given the packed representation of a ML-DSA secret key,
+        compute the corresponding packed public key bytes.
+        """
+        # First unpack the secret key
+        rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
+
+        # Compute the matrix A from rho in NTT form
+        A_hat = self._expand_matrix_from_seed(rho)
+
+        # Convert s1 to NTT form
+        s1_hat = s1.to_ntt()
+
+        # Compute the polynomial t, we have the lower bits t0,
+        # but we need the higher bits t1 for the public key
+        t = (A_hat @ s1_hat).from_ntt() + s2
+        t1, _ = t.power_2_round(self.d)
+
+        # The packed public key is made from rho || t1
+        pk_bytes = self._pack_pk(rho, t1)
+
+        # Ensure the public key matches the hash within the secret key
+        if tr != self._h(pk_bytes, 64):
+            raise ValueError("maleformed secret key")
+
+        return pk_bytes
+
+    """
     The following external mu functions are not in FIPS 204, but are in
     Appendix D of the following IETF draft and are included for experimentation
     for researchers and engineers
