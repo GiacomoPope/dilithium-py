@@ -161,7 +161,7 @@ class BaseTestSetup(object):
         self.assertIs(ml_dsa, self.ml_dsa)
         self.assertEqual(sk, self.sk)
         self.assertEqual(seed, None)
-        self.assertEqual(pk, None)
+        self.assertEqual(pk, self.pk)
 
 
 @unittest.skipUnless(ECDSA_PRESENT, "requires ecdsa package")
@@ -1006,7 +1006,7 @@ class TestMalfomedKeys(unittest.TestCase):
         self.assertEqual(self.ml_dsa, ml_dsa)
         self.assertEqual(self.sk, expanded)
         self.assertEqual(None, seed)
-        self.assertEqual(None, pk)
+        self.assertEqual(self.pk, pk)
 
     def test_sk_trailing_junk(self):
         enc = (
