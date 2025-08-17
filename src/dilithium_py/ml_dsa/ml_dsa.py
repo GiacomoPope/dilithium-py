@@ -388,6 +388,11 @@ class ML_DSA:
         Generates an ML-DSA signature following
         Algorithm 2 (FIPS 204)
         """
+        if type(ctx) != bytes:
+            raise ValueError(
+                "ctx bytes must be of type 'bytes'."
+            )
+    
         if len(ctx) > 255:
             raise ValueError(
                 f"ctx bytes must have length at most 255, ctx has length {len(ctx) = }"
