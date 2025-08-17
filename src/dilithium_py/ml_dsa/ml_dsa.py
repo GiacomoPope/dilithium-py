@@ -388,7 +388,7 @@ class ML_DSA:
         Generates an ML-DSA signature following
         Algorithm 2 (FIPS 204)
         """
-        if type(ctx) != bytes:
+        if isinstance(ctx, bytes):
             raise ValueError(
                 "ctx bytes must be of type 'bytes'."
             )
