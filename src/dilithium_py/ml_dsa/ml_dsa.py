@@ -8,7 +8,7 @@ except ImportError:
 
 
 class ML_DSA:
-    def __init__(self, parameter_set):
+    def __init__(self, parameter_set: dict):
         self.d = parameter_set["d"]
         self.k = parameter_set["k"]
         self.l = parameter_set["l"]
@@ -28,7 +28,7 @@ class ML_DSA:
         # use the method `set_drbg_seed()`
         self.random_bytes = os.urandom
 
-    def set_drbg_seed(self, seed):
+    def set_drbg_seed(self, seed: bytes):
         """
         Change entropy source to a DRBG and seed it with provided value.
 
@@ -69,7 +69,7 @@ class ML_DSA:
         Helper function which generates a element of size
         k x l from a seed `rho`.
         """
-        A_data = [[0 for _ in range(self.l)] for _ in range(self.k)]
+        A_data = [[self.R.zero() for _ in range(self.l)] for _ in range(self.k)]
         for i in range(self.k):
             for j in range(self.l):
                 A_data[i][j] = self.R.rejection_sample_ntt_poly(rho, i, j)
@@ -357,16 +357,16 @@ class ML_DSA:
 
         return c_tilde == self._h(mu + w_prime_bytes, self.c_tilde_bytes)
 
-    def keygen(self):
+    def keygen(self) -> tuple[bytes, bytes]:
         """
         Generates a public-private key pair following
         Algorithm 1 (FIPS 204)
         """
         zeta = self.random_bytes(32)
         pk, sk = self._keygen_internal(zeta)
-        return pk, sk
+        return (pk, sk)
 
-    def key_derive(self, seed):
+    def key_derive(self, seed: bytes) -> tuple[bytes, bytes]:
         """
         Derive a verification key and corresponding signing key
         following the approach from Section 6.1 (FIPS 204)
@@ -383,7 +383,9 @@ class ML_DSA:
         pk, sk = self._keygen_internal(seed)
         return (pk, sk)
 
-    def sign(self, sk_bytes, m, ctx=b"", deterministic=False):
+    def sign(
+        self, sk: bytes, m: bytes, ctx: bytes = b"", deterministic: bool = False
+    ) -> bytes:
         """
         Generates an ML-DSA signature following
         Algorithm 2 (FIPS 204)
@@ -402,10 +404,10 @@ class ML_DSA:
         m_prime = bytes([0]) + bytes([len(ctx)]) + ctx + m
 
         # Compute the signature of m_prime
-        sig_bytes = self._sign_internal(sk_bytes, m_prime, rnd)
+        sig_bytes = self._sign_internal(sk, m_prime, rnd)
         return sig_bytes
 
-    def verify(self, pk_bytes, m, sig_bytes, ctx=b""):
+    def verify(self, pk: bytes, m: bytes, sig: bytes, ctx: bytes = b"") -> bool:
         """
         Verifies a signature sigma for a message M following
         Algorithm 3 (FIPS 204)
@@ -418,7 +420,7 @@ class ML_DSA:
         # Format the message using the context
         m_prime = bytes([0]) + bytes([len(ctx)]) + ctx + m
 
-        return self._verify_internal(pk_bytes, m_prime, sig_bytes)
+        return self._verify_internal(pk, m_prime, sig)
 
     """
     The following additional function follows an outline from:
@@ -426,13 +428,13 @@ class ML_DSA:
     which computes pk_bytes when only the sk_bytes are known.
     """
 
-    def pk_from_sk(self, sk_bytes: bytes) -> bytes:
+    def pk_from_sk(self, sk: bytes) -> bytes:
         """
         Given the packed representation of a ML-DSA secret key,
         compute the corresponding packed public key bytes.
         """
         # First unpack the secret key
-        rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
+        rho, _, tr, s1, s2, _ = self._unpack_sk(sk)
 
         # Compute the matrix A from rho in NTT form
         A_hat = self._expand_matrix_from_seed(rho)
@@ -446,13 +448,13 @@ class ML_DSA:
         t1, _ = t.power_2_round(self.d)
 
         # The packed public key is made from rho || t1
-        pk_bytes = self._pack_pk(rho, t1)
+        pk = self._pack_pk(rho, t1)
 
         # Ensure the public key matches the hash within the secret key
-        if tr != self._h(pk_bytes, 64):
+        if tr != self._h(pk, 64):
             raise ValueError("malformed secret key")
 
-        return pk_bytes
+        return pk
 
     """
     The following external mu functions are not in FIPS 204, but are in
@@ -462,7 +464,7 @@ class ML_DSA:
     https://datatracker.ietf.org/doc/html/draft-ietf-lamps-dilithium-certificates-07
     """
 
-    def prehash_external_mu(self, pk_bytes, m, ctx=b""):
+    def prehash_external_mu(self, pk: bytes, m: bytes, ctx: bytes = b"") -> bytes:
         """
         Prehash the message `m` with context `ctx` together with
         the public key. For use with `sign_external_mu()`
@@ -472,22 +474,24 @@ class ML_DSA:
             raise ValueError(
                 f"ctx bytes must have length at most 255, ctx has length {len(ctx) = }"
             )
-        if len(pk_bytes) != self._pk_size():
+        if len(pk) != self._pk_size():
             raise ValueError(
                 f"Public key size doesn't match this ML-DSA object parameters,"
-                f"received {len(pk_bytes) = }, expected: {self._pk_size()}"
+                f"received {len(pk) = }, expected: {self._pk_size()}"
             )
 
         # Format the message using the context
         m_prime = bytes([0]) + bytes([len(ctx)]) + ctx + m
 
         # Compute mu by hashing the public key into the message
-        tr = self._h(pk_bytes, 64)
+        tr = self._h(pk, 64)
         mu = self._h(tr + m_prime, 64)
 
         return mu
 
-    def sign_external_mu(self, sk_bytes, mu, deterministic=False):
+    def sign_external_mu(
+        self, sk: bytes, mu: bytes, deterministic: bool = False
+    ) -> bytes:
         """
         Generates an ML-DSA signature of a message given the prehash
         mu = H(H(pk), M')
@@ -505,5 +509,5 @@ class ML_DSA:
 
         # Compute the signature given external mu, we set the external_mu
         # to True
-        sig_bytes = self._sign_internal(sk_bytes, mu, rnd, external_mu=True)
-        return sig_bytes
+        sig = self._sign_internal(sk, mu, rnd, external_mu=True)
+        return sig

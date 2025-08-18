@@ -13,6 +13,12 @@ class PolynomialRing:
         self.n = n
         self.element = Polynomial
 
+    def zero(self):
+        """
+        Return the value `0` of the polynomial ring
+        """
+        return self([0])
+
     def gen(self):
         """
         Return the generator `x` of the polynomial ring
