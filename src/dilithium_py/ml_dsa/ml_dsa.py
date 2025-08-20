@@ -1,5 +1,5 @@
 import os
-from ..modules.modules import ModuleDilithium
+from ..modules.modules import Matrix, Module, Vector
 
 try:
     from xoflib import shake256
@@ -20,7 +20,7 @@ class ML_DSA:
         self.beta = self.tau * self.eta
         self.c_tilde_bytes = parameter_set["c_tilde_bytes"]
 
-        self.M = ModuleDilithium()
+        self.M = Module()
         self.R = self.M.ring
         self.oid = parameter_set["oid"] if "oid" in parameter_set else None
 
@@ -58,13 +58,13 @@ class ML_DSA:
     """
 
     @staticmethod
-    def _h(input_bytes, length):
+    def _h(input: bytes, length: int) -> bytes:
         """
         H: B^*  -> B^*
         """
-        return shake256(input_bytes).read(length)
+        return shake256(input).read(length)
 
-    def _expand_matrix_from_seed(self, rho):
+    def _expand_matrix_from_seed(self, rho: bytes) -> Matrix:
         """
         Helper function which generates a element of size
         k x l from a seed `rho`.
@@ -75,7 +75,7 @@ class ML_DSA:
                 A_data[i][j] = self.R.rejection_sample_ntt_poly(rho, i, j)
         return self.M(A_data)
 
-    def _expand_vector_from_seed(self, rho_prime):
+    def _expand_vector_from_seed(self, rho_prime: bytes) -> tuple[Vector, Vector]:
         s1_elements = [
             self.R.rejection_bounded_poly(rho_prime, i, self.eta) for i in range(self.l)
         ]
@@ -88,7 +88,7 @@ class ML_DSA:
         s2 = self.M.vector(s2_elements)
         return s1, s2
 
-    def _expand_mask_vector(self, rho, mu):
+    def _expand_mask_vector(self, rho: bytes, mu: int) -> Vector:
         elements = [
             self.R.sample_mask_polynomial(rho, i, mu, self.gamma_1)
             for i in range(self.l)
@@ -96,16 +96,24 @@ class ML_DSA:
         return self.M.vector(elements)
 
     @staticmethod
-    def _pack_pk(rho, t1):
+    def _pack_pk(rho: bytes, t1: Vector) -> bytes:
         return rho + t1.bit_pack_t1()
 
-    def _pack_sk(self, rho, K, tr, s1, s2, t0):
+    def _pack_sk(
+        self,
+        rho: bytes,
+        k: bytes,
+        tr: bytes,
+        s1: Vector,
+        s2: Vector,
+        t0: Vector,
+    ) -> bytes:
         s1_bytes = s1.bit_pack_s(self.eta)
         s2_bytes = s2.bit_pack_s(self.eta)
         t0_bytes = t0.bit_pack_t0()
-        return rho + K + tr + s1_bytes + s2_bytes + t0_bytes
+        return rho + k + tr + s1_bytes + s2_bytes + t0_bytes
 
-    def _pack_h(self, h):
+    def _pack_h(self, h: Vector) -> bytes:
         non_zero_positions = [
             [i for i, c in enumerate(poly.coeffs) if c == 1]
             for row in h._data
@@ -121,20 +129,20 @@ class ML_DSA:
         packed.extend([0 for _ in range(padding_len)])
         return bytes(packed + offsets)
 
-    def _pack_sig(self, c_tilde, z, h):
+    def _pack_sig(self, c_tilde: bytes, z: Vector, h: Vector) -> bytes:
         return c_tilde + z.bit_pack_z(self.gamma_1) + self._pack_h(h)
 
-    def _pk_size(self):
+    def _pk_size(self) -> int:
         return 32 + 32 * self.k * 10
 
-    def _unpack_pk(self, pk_bytes):
-        if len(pk_bytes) != self._pk_size():
+    def _unpack_pk(self, pk: bytes) -> tuple[bytes, Vector]:
+        if len(pk) != self._pk_size():
             raise ValueError("PK packed bytes is of the wrong length")
-        rho, t1_bytes = pk_bytes[:32], pk_bytes[32:]
-        t1 = self.M.bit_unpack_t1(t1_bytes, self.k, 1)
+        rho, t1_bytes = pk[:32], pk[32:]
+        t1 = self.M.bit_unpack_t1(t1_bytes, self.k)
         return rho, t1
 
-    def _sk_size(self):
+    def _sk_size(self) -> int:
         if self.eta == 2:
             s_bytes = 96
         else:
@@ -144,7 +152,9 @@ class ML_DSA:
         t0_len = 416 * self.k
         return 2 * 32 + 64 + s1_len + s2_len + t0_len
 
-    def _unpack_sk(self, sk_bytes):
+    def _unpack_sk(
+        self, sk: bytes
+    ) -> tuple[bytes, bytes, bytes, Vector, Vector, Vector]:
         if self.eta == 2:
             s_bytes = 96
         else:
@@ -152,14 +162,14 @@ class ML_DSA:
         s1_len = s_bytes * self.l
         s2_len = s_bytes * self.k
         t0_len = 416 * self.k
-        if len(sk_bytes) != self._sk_size():
-            raise ValueError("SK packed bytes is of the wrong length")
+        if len(sk) != self._sk_size():
+            raise ValueError("sk packed bytes is of the wrong length")
 
         # Split bytes between seeds and vectors
-        sk_seed_bytes, sk_vec_bytes = sk_bytes[:128], sk_bytes[128:]
+        sk_seed_bytes, sk_vec_bytes = sk[:128], sk[128:]
 
         # Unpack seed bytes
-        rho, K, tr = (
+        rho, k, tr = (
             sk_seed_bytes[:32],
             sk_seed_bytes[32:64],
             sk_seed_bytes[64:128],
@@ -171,50 +181,55 @@ class ML_DSA:
         t0_bytes = sk_vec_bytes[-t0_len:]
 
         # Unpack bytes to vectors
-        s1 = self.M.bit_unpack_s(s1_bytes, self.l, 1, self.eta)
-        s2 = self.M.bit_unpack_s(s2_bytes, self.k, 1, self.eta)
-        t0 = self.M.bit_unpack_t0(t0_bytes, self.k, 1)
+        s1 = self.M.bit_unpack_s(s1_bytes, self.l, self.eta)
+        s2 = self.M.bit_unpack_s(s2_bytes, self.k, self.eta)
+        t0 = self.M.bit_unpack_t0(t0_bytes, self.k)
 
-        return rho, K, tr, s1, s2, t0
+        return rho, k, tr, s1, s2, t0
 
-    def _unpack_h(self, h_bytes):
+    def _unpack_h(self, h_bytes: bytes) -> Vector:
         offsets = [0] + list(h_bytes[-self.k :])
-        # check offsets are monotonic increasing
+
+        # ensure offsets are monotonic increasing
         if any(offsets[i] > offsets[i + 1] for i in range(len(offsets) - 1)):
-            raise ValueError("Offsets in h_bytes are not monotonic increasing")
-        # check offset[-1] is smaller than the length of h_bytes
+            raise ValueError("offsets in h_bytes are not monotonically increasing")
+
+        # ensure offset[-1] is smaller than the length of h_bytes
         if offsets[-1] > self.omega:
-            raise ValueError("Accumulate offset of hints exceeds omega")
-        # check zero fields are all zeros
+            raise ValueError("accumulate offset of hints exceeds omega")
+
+        # ensure zero fields are all zeros
         if any(b != 0 for b in h_bytes[offsets[-1] : self.omega]):
-            raise ValueError("Non-zero fields in h_bytes are not all zeros")
+            raise ValueError("non-zero fields in h_bytes are not all zeros")
 
         non_zero_positions = [
             list(h_bytes[offsets[i] : offsets[i + 1]]) for i in range(self.k)
         ]
 
-        matrix = []
+        vector_coeffs = []
         for poly_non_zero in non_zero_positions:
             coeffs = [0 for _ in range(256)]
             for i, non_zero in enumerate(poly_non_zero):
                 if i > 0 and non_zero < poly_non_zero[i - 1]:
                     raise ValueError(
-                        "Non-zero positions in h_bytes are not monotonic increasing"
+                        "non-zero positions in h_bytes are not monotonically increasing"
                     )
                 coeffs[non_zero] = 1
-            matrix.append([self.R(coeffs)])
-        return self.M(matrix)
+            vector_coeffs.append(self.R(coeffs))
 
-    def _unpack_sig(self, sig_bytes):
-        c_tilde = sig_bytes[: self.c_tilde_bytes]
-        z_bytes = sig_bytes[self.c_tilde_bytes : -(self.k + self.omega)]
-        h_bytes = sig_bytes[-(self.k + self.omega) :]
+        return self.M.vector(vector_coeffs)
 
-        z = self.M.bit_unpack_z(z_bytes, self.l, 1, self.gamma_1)
+    def _unpack_sig(self, sig: bytes) -> tuple[bytes, Vector, Vector]:
+        c_tilde = sig[: self.c_tilde_bytes]
+        z_bytes = sig[self.c_tilde_bytes : -(self.k + self.omega)]
+        h_bytes = sig[-(self.k + self.omega) :]
+
+        z = self.M.bit_unpack_z(z_bytes, self.l, self.gamma_1)
         h = self._unpack_h(h_bytes)
+
         return c_tilde, z, h
 
-    def _keygen_internal(self, zeta):
+    def _keygen_internal(self, zeta: bytes) -> tuple[bytes, bytes]:
         """
         Generates a public-private key pair from a seed following
         Algorithm 6 (FIPS 204)
@@ -245,7 +260,9 @@ class ML_DSA:
 
         return pk, sk
 
-    def _sign_internal(self, sk_bytes, m, rnd, external_mu=False):
+    def _sign_internal(
+        self, sk: bytes, m: bytes, rnd: bytes, external_mu: bool = False
+    ) -> bytes:
         """
         Deterministic algorithm to generate a signature for a formatted message
         M' following Algorithm 7 (FIPS 204)
@@ -254,7 +271,7 @@ class ML_DSA:
         the pre-hashed message `mu = prehash_external_mu()`
         """
         # unpack the secret key
-        rho, K, tr, s1, s2, t0 = self._unpack_sk(sk_bytes)
+        rho, k, tr, s1, s2, t0 = self._unpack_sk(sk)
 
         # Precompute NTT representation
         s1_hat = s1.to_ntt()
@@ -269,7 +286,7 @@ class ML_DSA:
             mu = m
         else:
             mu = self._h(tr + m, 64)
-        rho_prime = self._h(K + rnd + mu, 64)
+        rho_prime = self._h(k + rnd + mu, 64)
 
         kappa = 0
         alpha = self.gamma_2 << 1
@@ -318,16 +335,15 @@ class ML_DSA:
 
             return self._pack_sig(c_tilde, z, h)
 
-    def _verify_internal(self, pk_bytes, m, sig_bytes):
+    def _verify_internal(self, pk: bytes, m: bytes, sig: bytes) -> bool:
         """
         Internal function to verify a signature sigma for a formatted message M'
         following Algorithm 8 (FIPS 204)
         """
-        rho, t1 = self._unpack_pk(pk_bytes)
+        rho, t1 = self._unpack_pk(pk)
         try:
-            c_tilde, z, h = self._unpack_sig(sig_bytes)
+            c_tilde, z, h = self._unpack_sig(sig)
         except ValueError:
-            # verify failed if malformed input signature
             return False
 
         if h.sum_hint() > self.omega:
@@ -338,7 +354,7 @@ class ML_DSA:
 
         A_hat = self._expand_matrix_from_seed(rho)
 
-        tr = self._h(pk_bytes, 64)
+        tr = self._h(pk, 64)
         mu = self._h(tr + m, 64)
         c = self.R.sample_in_ball(c_tilde, self.tau)
 
