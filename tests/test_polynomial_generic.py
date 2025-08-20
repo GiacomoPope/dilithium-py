@@ -1,10 +1,10 @@
 import unittest
 from random import randint
-from dilithium_py.polynomials.polynomials_generic import PolynomialRing
+from dilithium_py.polynomials.polynomials_generic import PolynomialRingGeneric
 
 
 class TestPolynomialRing(unittest.TestCase):
-    R = PolynomialRing(11, 5)
+    R = PolynomialRingGeneric(11, 5)
 
     def test_gen(self):
         self.assertTrue(self.R.gen() == self.R([0, 1]))
@@ -30,7 +30,7 @@ class TestPolynomialRing(unittest.TestCase):
 
 
 class TestPolynomial(unittest.TestCase):
-    R = PolynomialRing(11, 5)
+    R = PolynomialRingGeneric(11, 5)
 
     def test_getitem(self):
         x = self.R.gen()

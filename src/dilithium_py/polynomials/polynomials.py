@@ -1,4 +1,4 @@
-from .polynomials_generic import PolynomialRing, Polynomial
+from .polynomials_generic import PolynomialRingGeneric, PolynomialGeneric
 from ..utilities.utils import (
     reduce_mod_pm,
     high_bits,
@@ -14,12 +14,12 @@ except ImportError:
     from ..shake.shake_wrapper import shake128, shake256
 
 
-class PolynomialRingDilithium(PolynomialRing):
+class PolynomialRing(PolynomialRingGeneric):
     def __init__(self):
         self.q = 8380417
         self.n = 256
-        self.element = PolynomialDilithium
-        self.element_ntt = PolynomialDilithiumNTT
+        self.element = Polynomial
+        self.element_ntt = PolynomialNTT
 
         root_of_unity = 1753
         self.ntt_zetas = [
@@ -235,7 +235,7 @@ class PolynomialRingDilithium(PolynomialRing):
         return element(self, coefficients)
 
 
-class PolynomialDilithium(Polynomial):
+class Polynomial(PolynomialGeneric):
     def __init__(self, parent, coefficients):
         self.parent = parent
         self.coeffs = self._parse_coefficients(coefficients)
@@ -252,6 +252,7 @@ class PolynomialDilithium(Polynomial):
             while start < 256:
                 k = k + 1
                 zeta = zetas[k]
+                j = start
                 for j in range(start, start + l):
                     t = zeta * coeffs[j + l]
                     coeffs[j + l] = coeffs[j] - t
@@ -386,7 +387,7 @@ class PolynomialDilithium(Polynomial):
         return self.parent(coeffs)
 
 
-class PolynomialDilithiumNTT(PolynomialDilithium):
+class PolynomialNTT(Polynomial):
     def __init__(self, parent, coefficients):
         self.parent = parent
         self.coeffs = self._parse_coefficients(coefficients)
@@ -407,6 +408,7 @@ class PolynomialDilithiumNTT(PolynomialDilithium):
             while start < 256:
                 k = k - 1
                 zeta = -zetas[k]
+                j = start
                 for j in range(start, start + l):
                     t = coeffs[j]
                     coeffs[j] = t + coeffs[j + l]
