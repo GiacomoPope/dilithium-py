@@ -54,7 +54,7 @@ class Matrix(MatrixGeneric):
         )
 
     def __bit_pack(self, algorithm, *args):
-        return b"".join(algorithm(poly, *args) for row in self._data for poly in row)
+        return b"".join(algorithm(poly, *args) for row in self.rows() for poly in row)
 
     def bit_pack_t1(self):
         algorithm = self.parent.ring.element.bit_pack_t1
@@ -81,24 +81,24 @@ class Matrix(MatrixGeneric):
         Convert every element of the matrix into NTT form
         """
         data = [[x.to_ntt() for x in row] for row in self._data]
-        return self.parent(data, transpose=self._transpose)
+        return self.parent(data, self._transpose)
 
     def from_ntt(self):
         """
         Convert every element of the matrix from NTT form
         """
         data = [[x.from_ntt() for x in row] for row in self._data]
-        return self.parent(data, transpose=self._transpose)
+        return self.parent(data, self._transpose)
 
     def high_bits(self, alpha, is_ntt=False):
         matrix = [
-            [ele.high_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data
+            [ele.high_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self.rows()
         ]
         return self.parent(matrix)
 
     def low_bits(self, alpha, is_ntt=False):
         matrix = [
-            [ele.low_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self._data
+            [ele.low_bits(alpha, is_ntt=is_ntt) for ele in row] for row in self.rows()
         ]
         return self.parent(matrix)
 
@@ -109,7 +109,7 @@ class Matrix(MatrixGeneric):
         """
         matrix = [
             [p.make_hint(q, alpha) for p, q in zip(r1, r2)]
-            for r1, r2 in zip(self._data, other._data)
+            for r1, r2 in zip(self.rows(), other.rows())
         ]
         return self.parent(matrix)
 
@@ -120,7 +120,7 @@ class Matrix(MatrixGeneric):
         """
         matrix = [
             [p.make_hint_optimised(q, alpha) for p, q in zip(r1, r2)]
-            for r1, r2 in zip(self._data, other._data)
+            for r1, r2 in zip(self.rows(), other.rows())
         ]
         return self.parent(matrix)
 
@@ -140,7 +140,7 @@ class Matrix(MatrixGeneric):
         Helper function to count the number of coeffs == 1
         in all the polynomials of a matrix
         """
-        return sum(c for row in self._data for p in row for c in p)
+        return sum(c for row in self.rows() for p in row for c in p)
 
 
 class Vector(Matrix):

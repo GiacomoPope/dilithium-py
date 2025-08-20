@@ -82,7 +82,7 @@ class MatrixGeneric:
         m, n = self.dim()
         return self.parent(
             [[-self[i, j] for j in range(n)] for i in range(m)],
-            self._transpose,
+            False,
         )
 
     def __add__(self, other):
