@@ -1,19 +1,19 @@
 import unittest
 from random import randint
-from dilithium_py.polynomials.polynomials_generic import PolynomialRing
-from dilithium_py.modules.modules_generic import Module
+from dilithium_py.polynomials.polynomials_generic import PolynomialRingGeneric
+from dilithium_py.modules.modules_generic import ModuleGeneric
 
 
 class TestModule(unittest.TestCase):
-    R = PolynomialRing(11, 5)
-    M = Module(R)
+    R = PolynomialRingGeneric(11, 5)
+    M = ModuleGeneric(R)
 
     def test_random_element(self):
         for _ in range(100):
             m = randint(1, 5)
             n = randint(1, 5)
             A = self.M.random_element(m, n)
-            self.assertEqual(type(A), self.M.matrix)
+            self.assertEqual(type(A), self.M.matrix_element)
             self.assertEqual(type(A[0, 0]), self.R.element)
             self.assertEqual(A.dim(), (m, n))
 
@@ -38,10 +38,10 @@ class TestModule(unittest.TestCase):
 
 
 class TestMatrix(unittest.TestCase):
-    R = PolynomialRing(11, 5)
-    R_prime = PolynomialRing(11, 2)
-    M = Module(R)
-    M_prime = Module(R)
+    R = PolynomialRingGeneric(11, 5)
+    R_prime = PolynomialRingGeneric(11, 2)
+    M = ModuleGeneric(R)
+    M_prime = ModuleGeneric(R)
 
     def test_equality(self):
         for _ in range(100):
@@ -161,20 +161,25 @@ class TestMatrix(unittest.TestCase):
             v = [self.R.random_element() for _ in range(5)]
             dot = sum([ui * vi for ui, vi in zip(u, v)])
 
-            U = self.M.vector(u)
-            V = self.M.vector(v)
+            U = self.M([u], transpose=True)
+            V = self.M([v], transpose=True)
 
             self.assertEqual(dot, U.dot(V))
+
+        u = [self.R.random_element() for _ in range(5)]
+        U = self.M([u])
         self.assertRaises(TypeError, lambda: U.dot("A"))
 
     def test_print(self):
         A = self.M(
-            [self.R([1, 2]), self.R([3, 4, 5, 6])],
-            [self.R([0, 0, 0, 0, 3]), self.R([0, 1, 0, 3])],
+            [
+                [self.R([1, 2]), self.R([3, 4, 5, 6])],
+                [self.R([0, 0, 0, 0, 3]), self.R([0, 1, 0, 3])],
+            ],
         )
         u = self.M([self.R([1, 2]), self.R([3, 4, 5, 6])])
 
-        sA = "[                1 + 2*x]\n[3 + 4*x + 5*x^2 + 6*x^3]"
+        sA = "[1 + 2*x, 3 + 4*x + 5*x^2 + 6*x^3]\n[  3*x^4,               x + 3*x^3]"
         su = "[1 + 2*x, 3 + 4*x + 5*x^2 + 6*x^3]"
         self.assertEqual(str(A), sA)
         self.assertEqual(str(u), su)

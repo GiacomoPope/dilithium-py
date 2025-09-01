@@ -1,5 +1,5 @@
 import os
-from ..modules.modules import ModuleDilithium
+from ..modules.modules import Module
 
 try:
     from xoflib import shake256
@@ -19,7 +19,7 @@ class Dilithium:
         self.gamma_2 = parameter_set["gamma_2"]
         self.beta = self.tau * self.eta
 
-        self.M = ModuleDilithium()
+        self.M = Module()
         self.R = self.M.ring
 
         # Use system randomness by default, for deterministic randomness
@@ -51,8 +51,8 @@ class Dilithium:
             )
 
     """
-    H() uses Shake256 to hash data to 32 and 64 bytes in a 
-    few places in the code 
+    H() uses Shake256 to hash data to 32 and 64 bytes in a
+    few places in the code
     """
 
     @staticmethod
@@ -67,7 +67,7 @@ class Dilithium:
         Helper function which generates a element of size
         k x l from a seed `rho`.
         """
-        A_data = [[0 for _ in range(self.l)] for _ in range(self.k)]
+        A_data = [[self.R.zero() for _ in range(self.l)] for _ in range(self.k)]
         for i in range(self.k):
             for j in range(self.l):
                 A_data[i][j] = self.R.rejection_sample_ntt_poly(rho, i, j)
@@ -124,7 +124,7 @@ class Dilithium:
 
     def _unpack_pk(self, pk_bytes):
         rho, t1_bytes = pk_bytes[:32], pk_bytes[32:]
-        t1 = self.M.bit_unpack_t1(t1_bytes, self.k, 1)
+        t1 = self.M.bit_unpack_t1(t1_bytes, self.k)
         return rho, t1
 
     def _unpack_sk(self, sk_bytes):
@@ -154,9 +154,9 @@ class Dilithium:
         t0_bytes = sk_vec_bytes[-t0_len:]
 
         # Unpack bytes to vectors
-        s1 = self.M.bit_unpack_s(s1_bytes, self.l, 1, self.eta)
-        s2 = self.M.bit_unpack_s(s2_bytes, self.k, 1, self.eta)
-        t0 = self.M.bit_unpack_t0(t0_bytes, self.k, 1)
+        s1 = self.M.bit_unpack_s(s1_bytes, self.l, self.eta)
+        s2 = self.M.bit_unpack_s(s2_bytes, self.k, self.eta)
+        t0 = self.M.bit_unpack_t0(t0_bytes, self.k)
 
         return rho, K, tr, s1, s2, t0
 
@@ -179,7 +179,7 @@ class Dilithium:
         z_bytes = sig_bytes[32 : -(self.k + self.omega)]
         h_bytes = sig_bytes[-(self.k + self.omega) :]
 
-        z = self.M.bit_unpack_z(z_bytes, self.l, 1, self.gamma_1)
+        z = self.M.bit_unpack_z(z_bytes, self.l, self.gamma_1)
         h = self._unpack_h(h_bytes)
         return c_tilde, z, h
 
