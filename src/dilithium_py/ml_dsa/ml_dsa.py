@@ -58,11 +58,11 @@ class ML_DSA:
     """
 
     @staticmethod
-    def _h(input: bytes, length: int) -> bytes:
+    def _h(in_bytes: bytes, length: int) -> bytes:
         """
         H: B^*  -> B^*
         """
-        return shake256(input).read(length)
+        return shake256(in_bytes).read(length)
 
     def _expand_matrix_from_seed(self, rho: bytes) -> Matrix:
         """
