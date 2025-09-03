@@ -7,7 +7,7 @@
 > [!CAUTION]
 > :warning: **Under no circumstances should this be used for cryptographic
 applications.** :warning:
-> 
+>
 > This is an educational resource and has not been designed to be secure
 > against any form of side-channel attack. The intended use of this project
 > is for learning and experimenting with ML-DSA and Dilithium
@@ -22,7 +22,7 @@ This repository contains a pure python implementation of both:
 
 **Note**: This project has followed
 [`kyber-py`](https://github.com/GiacomoPope/kyber-py) which is a pure-python
-implementation of CRYSTALS-Kyber and ML-KEM and reuses a lot of code. 
+implementation of CRYSTALS-Kyber and ML-KEM and reuses a lot of code.
 
 ## Disclaimer
 
@@ -30,8 +30,8 @@ I have written `dilithium-py` as a way to learn about the way protocol works,
 and to try and create a clean, well commented implementation which people can
 learn from.
 
-This code is not constant time, or written to be performant. Rather, it was 
-written so that reading though the pseudocode of the 
+This code is not constant time, or written to be performant. Rather, it was
+written so that reading though the pseudocode of the
 [specification](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf)
 closely matches the code which we use within `dilithium.py` and supporting files.
 
@@ -68,22 +68,22 @@ The KAT files were either downloaded or generated:
 
 ### Generating KAT files for Dilithium
 
-This implementation is based off the most recent specification (v3.1). 
-There were 
-[breaking changes](https://github.com/pq-crystals/dilithium/commit/e989e691ae3d3f5933d012ab074bdc413ebc6fad) 
+This implementation is based off the most recent specification (v3.1).
+There were
+[breaking changes](https://github.com/pq-crystals/dilithium/commit/e989e691ae3d3f5933d012ab074bdc413ebc6fad)
 to the KAT files submitted to NIST when Dilithium was updated to 3.1, so the
 NIST KAT files will not match our code.
 
-To deal with this, we generated our own KAT files from the 
+To deal with this, we generated our own KAT files from the
 [reference implementation](https://github.com/pq-crystals/dilithium/releases/tag/v3.1)
 for version 3.1. These are the files inside [assets](assets/).
 
 ### Dependencies
 
 Originally, as with `kyber-py`, this project was planned to have zero
-dependencies, however like `kyber-py`, to pass the KATs, I need  a 
+dependencies, however like `kyber-py`, to pass the KATs, I need  a
 deterministic CSRNG. The reference implementation uses
-AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](src/dilithium_py/drbg/ase256_ctr_drbg.py). 
+AES256 CTR DRBG. I have implemented this in [`ase256_ctr_drbg.py`](src/dilithium_py/drbg/ase256_ctr_drbg.py).
 However, I have not implemented AES itself, instead I import this from `pycryptodome`.
 
 To install dependencies, run `pip install -r requirements.txt`.
@@ -112,16 +112,16 @@ There are three functions exposed on the `ML_DSA` class which are intended
 for use:
 
 - `ML_DSA.keygen()`: generate a bit-packed keypair `(pk, sk)`
-- `ML_DSA.sign(sk, msg)`: generate a bit-packed signature `sig` 
+- `ML_DSA.sign(sk, msg)`: generate a bit-packed signature `sig`
 from the message `msg` and bit-packed secret key `sk`.
 - `ML_DSA.verify(pk, msg, sig)`: verify that the bit-packed `sig` is
 valid for a given message `msg` and bit-packed public key `pk`.
 
-To use `ML_DSA()`, it must be initialised with a dictionary of the 
+To use `ML_DSA()`, it must be initialised with a dictionary of the
 protocol parameters. An example can be seen in `DEFAULT_PARAMETERS` in
 the file [`ml_dsa.py`](src/dilithium_py/ml_dsa/default_parameters.py)
 
-Additionally, the class has been initialised with these default parameters, 
+Additionally, the class has been initialised with these default parameters,
 so you can simply import the NIST level you want to play with:
 
 #### Example
@@ -155,7 +155,7 @@ Some very rough benchmarks to give an idea about performance:
 | `Sign()`   Average Time  |  36 ms       | 62 ms        | 75 ms        |
 | `Verify()` Median Time   |  8 ms        | 11 ms        | 17 ms        |
 
-All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls. 
+All times recorded using a Intel Core i7-9750H CPU averaged over 1000 calls.
 
 ### Dilithium
 
@@ -163,16 +163,16 @@ There are three functions exposed on the `Dilithium` class which are intended
 for use:
 
 - `Dilithium.keygen()`: generate a bit-packed keypair `(pk, sk)`
-- `Dilithium.sign(sk, msg)`: generate a bit-packed signature `sig` 
+- `Dilithium.sign(sk, msg)`: generate a bit-packed signature `sig`
 from the message `msg` and bit-packed secret key `sk`.
 - `Dilithium.verify(pk, msg, sig)`: verify that the bit-packed `sig` is
 valid for a given message `msg` and bit-packed public key `pk`.
 
-To use `Dilithium()`, it must be initialised with a dictionary of the 
+To use `Dilithium()`, it must be initialised with a dictionary of the
 protocol parameters. An example can be seen in `DEFAULT_PARAMETERS` in
 the file [`dilithium.py`](src/dilithium_py/dilithium/default_parameters.py)
 
-Additionally, the class has been initialised with these default parameters, 
+Additionally, the class has been initialised with these default parameters,
 so you can simply import the NIST level you want to play with:
 
 #### Example
@@ -288,11 +288,11 @@ def make_hint_optimised(z, r, a, q):
     return 1
 ```
 
-In particular, when `z = q-1`, `make_hint()` will return `1`, while the `make_hint_optimised()` returns `0`. 
+In particular, when `z = q-1`, `make_hint()` will return `1`, while the `make_hint_optimised()` returns `0`.
 
 As this optimisation is present in most implementations, this has caused a
 confusion about whether `make_hint()` is correct as the output is different to
-`make_hint_optimised()`. 
+`make_hint_optimised()`.
 
 It's important to realise the output of these make hints functions is different
 with the same input vectors, but the hint vector will be identical in the cases that:
@@ -307,12 +307,12 @@ pass.)
 
 ### Polynomials
 
-The file [`polynomials.py`](src/dilithium_py/polynomials/polynomials_generic.py) contains the classes 
-`PolynomialRing` and 
-`Polynomial`. This implements the univariate polynomial ring
+The file [`polynomials.py`](src/dilithium_py/polynomials/polynomials_generic.py) contains the classes
+`GenericPolynomialRing` and
+`GenericPolynomial`. This implements the univariate polynomial ring
 
 $$
-R_q = \mathbb{F}_q[X] /(X^n + 1) 
+R_q = \mathbb{F}_q[X] /(X^n + 1)
 $$
 
 The implementation is inspired by `SageMath` and you can create the
@@ -321,7 +321,7 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 #### Example
 
 ```python
->>> R = PolynomialRing(11, 8)
+>>> R = GenericPolynomialRing(11, 8)
 >>> x = R.gen()
 >>> f = 3*x**3 + 4*x**7
 >>> g = R.random_element(); g
@@ -336,25 +336,25 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 ### Modules
 
-The file [`modules.py`](src/dilithium_py/modules/modules_generic.py) contains the classes `Module` and `Matrix`.
+The file [`modules.py`](src/dilithium_py/modules/modules_generic.py) contains the classes `GenericModule` and `GenericMatrix`.
 A module is a generalisation of a vector space, where the field
-of scalars is replaced with a ring. In the case of Dilithium, we 
-need the module with the ring $R_q$ as described above. 
+of scalars is replaced with a ring. In the case of Dilithium, we
+need the module with the ring $R_q$ as described above.
 
-`Matrix` allows elements of the module to be of size $m \times n$
+`GenericMatrix` allows elements of the module to be of size $m \times n$
 For Dilithium, we need vectors of length $k$ and $l$ and a matrix
-of size $l \times k$. 
+of size $l \times k$.
 
-As an example of the operations we can perform with out `Module`
+As an example of the operations we can perform with out `GenericModule`
 lets revisit the ring from the previous example:
 
 #### Example
 
 ```python
->>> R = PolynomialRing(11, 8)
+>>> R = GenericPolynomialRing(11, 8)
 >>> x = R.gen()
 >>>
->>> M = Module(R)
+>>> M = GenericModule(R)
 >>> # We create a matrix by feeding the coefficients to M
 >>> A = M([[x + 3*x**2, 4 + 3*x**7], [3*x**3 + 9*x**7, x**4]])
 >>> A
@@ -441,7 +441,7 @@ These functions extend to modules
 True
 ```
 
-As operations on the module are just operations between elements, 
+As operations on the module are just operations between elements,
 we expect a similar 100x speed up when working in NTT form:
 
 ```py
