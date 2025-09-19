@@ -144,6 +144,33 @@ so you can simply import the NIST level you want to play with:
 The above example would also work with the other NIST levels
 `ML_DSA_65` and `ML_DSA_87`.
 
+#### Hash ML-DSA
+
+Following algorithms 4 and 5 of FIPS 204 we also include a version of pre-hash ML-DSA which hashes the message before signing it using SHA512 by default for
+all three security levels. This is used in much the same way as ML-DSA:
+
+```python
+>>> from dilithium_py.ml_dsa import HASH_ML_DSA_44_WITH_SHA512
+>>>
+>>> # Example of signing
+>>> pk, sk = HASH_ML_DSA_44_WITH_SHA512.keygen()
+>>> msg = b"Your message signed by ML_DSA"
+>>> sig = HASH_ML_DSA_44_WITH_SHA512.sign(sk, msg)
+>>> assert HASH_ML_DSA_44_WITH_SHA512.verify(pk, msg, sig)
+>>>
+>>> # Verification will fail with the wrong msg or pk
+>>> assert not HASH_ML_DSA_44_WITH_SHA512.verify(pk, b"", sig)
+>>> pk_new, sk_new = HASH_ML_DSA_44_WITH_SHA512.keygen()
+>>> assert not HASH_ML_DSA_44_WITH_SHA512.verify(pk_new, msg, sig)
+```
+
+There is also support for other hash functions (at the time, only SHA256 and SHAKE128), but there seem to only be OIDs for the pre-hash version using SHA512
+so this is what is included. To access signing with other hash functions the methods are `HASH_ML_DSA_44_WITH_SHA512._sign_with_pre_hash` and 
+`HASH_ML_DSA_44_WITH_SHA512._verify_with_pre_hash`. For more information see the
+implementation and comments in `hash_ml_dsa.py`.
+
+The pre-hash version of ML-DSA has purposefully been added to a child class of ML-DSA as the signatures which are produced between these variants are incompatible.
+
 ### Benchmarks
 
 Some very rough benchmarks to give an idea about performance:
