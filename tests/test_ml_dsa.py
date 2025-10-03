@@ -20,6 +20,10 @@ class TestMLDSA(unittest.TestCase):
             sig = ML_DSA.sign(sk, msg, ctx=ctx)
             check_verify = ML_DSA.verify(pk, msg, sig, ctx=ctx)
 
+            check_short_verify = ML_DSA.verify(pk, msg, sig[:-1], ctx=ctx)
+            check_long_verify = ML_DSA.verify(pk, msg, sig + b"\x00", ctx=ctx)
+            check_empty_verify = ML_DSA.verify(pk, msg, b"", ctx=ctx)
+
             # Sign with external_mu instead
             external_mu = ML_DSA.prehash_external_mu(pk, msg, ctx=ctx)
             sig_external_mu = ML_DSA.sign_external_mu(sk, external_mu)
@@ -39,6 +43,15 @@ class TestMLDSA(unittest.TestCase):
 
             # Check that signature works
             self.assertTrue(check_verify)
+
+            # Check that too short signature is rejected
+            self.assertFalse(check_short_verify)
+
+            # Check that too short signature is rejected
+            self.assertFalse(check_long_verify)
+
+            # Check that empty signature is rejected
+            self.assertFalse(check_empty_verify)
 
             # Check that external_mu also works
             self.assertTrue(check_external_mu)

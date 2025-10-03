@@ -152,6 +152,14 @@ class ML_DSA:
         t0_len = 416 * self.k
         return 2 * 32 + 64 + s1_len + s2_len + t0_len
 
+    def _sig_size(self) -> int:
+        if self.gamma_1 == 131072:
+            s_bytes = 18
+        else:
+            assert self.gamma_1 == 524288
+            s_bytes = 20
+        return self.c_tilde_bytes + self.l * 32 * s_bytes + self.omega + self.k
+
     def _unpack_sk(
         self, sk: bytes
     ) -> tuple[bytes, bytes, bytes, Vector, Vector, Vector]:
@@ -220,6 +228,8 @@ class ML_DSA:
         return self.M.vector(vector_coeffs)
 
     def _unpack_sig(self, sig: bytes) -> tuple[bytes, Vector, Vector]:
+        if len(sig) != self._sig_size():
+            raise ValueError("Incorrect signature size")
         c_tilde = sig[: self.c_tilde_bytes]
         z_bytes = sig[self.c_tilde_bytes : -(self.k + self.omega)]
         h_bytes = sig[-(self.k + self.omega) :]
