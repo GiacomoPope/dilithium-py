@@ -335,8 +335,8 @@ pass.)
 ### Polynomials
 
 The file [`polynomials.py`](src/dilithium_py/polynomials/polynomials_generic.py) contains the classes
-`GenericPolynomialRing` and
-`GenericPolynomial`. This implements the univariate polynomial ring
+`PolynomialRingGeneric` and
+`PolynomialGeneric`. This implements the univariate polynomial ring
 
 $$
 R_q = \mathbb{F}_q[X] /(X^n + 1)
@@ -348,7 +348,7 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 #### Example
 
 ```python
->>> R = GenericPolynomialRing(11, 8)
+>>> R = PolynomialRingGeneric(11, 8)
 >>> x = R.gen()
 >>> f = 3*x**3 + 4*x**7
 >>> g = R.random_element(); g
@@ -363,25 +363,25 @@ ring $R_{11} = \mathbb{F}_{11}[X] /(X^8 + 1)$ in the following way:
 
 ### Modules
 
-The file [`modules.py`](src/dilithium_py/modules/modules_generic.py) contains the classes `GenericModule` and `GenericMatrix`.
+The file [`modules.py`](src/dilithium_py/modules/modules_generic.py) contains the classes `ModuleGeneric` and `MatrixGeneric`.
 A module is a generalisation of a vector space, where the field
 of scalars is replaced with a ring. In the case of Dilithium, we
 need the module with the ring $R_q$ as described above.
 
-`GenericMatrix` allows elements of the module to be of size $m \times n$
+`MatrixGeneric` allows elements of the module to be of size $m \times n$
 For Dilithium, we need vectors of length $k$ and $l$ and a matrix
 of size $l \times k$.
 
-As an example of the operations we can perform with out `GenericModule`
+As an example of the operations we can perform with out `ModuleGeneric`
 lets revisit the ring from the previous example:
 
 #### Example
 
 ```python
->>> R = GenericPolynomialRing(11, 8)
+>>> R = PolynomialRingGeneric(11, 8)
 >>> x = R.gen()
 >>>
->>> M = GenericModule(R)
+>>> M = ModuleGeneric(R)
 >>> # We create a matrix by feeding the coefficients to M
 >>> A = M([[x + 3*x**2, 4 + 3*x**7], [3*x**3 + 9*x**7, x**4]])
 >>> A
