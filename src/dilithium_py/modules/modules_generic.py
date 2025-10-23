@@ -165,7 +165,7 @@ class MatrixGeneric:
     def __repr__(self):
         m, n = self.dim()
 
-        if m == 1:
+        if m == 1 and n == 1:
             return str(self._data[0])
 
         max_col_width = [max(len(str(self[i, j])) for i in range(m)) for j in range(n)]
