@@ -183,3 +183,11 @@ class TestMatrix(unittest.TestCase):
         su = "[1 + 2*x, 3 + 4*x + 5*x^2 + 6*x^3]"
         self.assertEqual(str(A), sA)
         self.assertEqual(str(u), su)
+
+        A = self.M([self.R(1), self.R(2), self.R(3)])
+        sA = "[1, 2, 3]"
+        self.assertEqual(str(A), sA)
+
+        A = self.M([[self.R(1)], [self.R(2)], [self.R(3)]])
+        sA = "[1]\n[2]\n[3]"
+        self.assertEqual(str(A), sA)
