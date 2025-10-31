@@ -1,19 +1,17 @@
-def reduce_mod_pm(x, n):
+def reduce_mod_pm(r, n):
     """
-    Takes an integer 0 < x < n and represents
-    it as an integer in the range
+    Takes an integer 0 < r < n and computes the value
+    r' = r mod^± n, defined to be integer in the range
 
-    r = x % n
-
-    for n odd:
-        -(n-1)/2 < r <= (n-1)/2
     for n even:
-        - n / 2  <= r <= n / 2
+        -(n / 2) < r' <= (n / 2)
+    for n odd:
+        -(n - 1) / 2 <= r' <= (n - 1) / 2
     """
-    x = x % n
-    if x > (n >> 1):
-        x -= n
-    return x
+    r = r % n
+    if r > (n >> 1):
+        r -= n
+    return r
 
 
 def decompose(r, a, q):
