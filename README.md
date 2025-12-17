@@ -24,6 +24,10 @@ This repository contains a pure python implementation of both:
 [`kyber-py`](https://github.com/GiacomoPope/kyber-py) which is a pure-python
 implementation of CRYSTALS-Kyber and ML-KEM and reuses a lot of code.
 
+## Licenses
+
+This project is dual-licensed under your choice of the MIT License OR the Apache License 2.0.
+
 ## Disclaimer
 
 I have written `dilithium-py` as a way to learn about the way protocol works,
