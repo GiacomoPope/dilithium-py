@@ -82,6 +82,16 @@ class TestHashMLDSA(unittest.TestCase):
     def test_hash_ml_dsa_87_sha256(self):
         self.generic_test_hash_ml_dsa(HASH_ML_DSA_87_WITH_SHA512, "SHA256")
 
+    # Test with SHA3-512
+    def test_hash_ml_dsa_44_sha3_512(self):
+        self.generic_test_hash_ml_dsa(HASH_ML_DSA_44_WITH_SHA512, "SHA3_512")
+
+    def test_hash_ml_dsa_65_sha3_512(self):
+        self.generic_test_hash_ml_dsa(HASH_ML_DSA_65_WITH_SHA512, "SHA3_512")
+
+    def test_hash_ml_dsa_87_sha3_512(self):
+        self.generic_test_hash_ml_dsa(HASH_ML_DSA_87_WITH_SHA512, "SHA3_512")
+
     # Test with SHAKE128
     def test_hash_ml_dsa_44_shake128(self):
         self.generic_test_hash_ml_dsa(HASH_ML_DSA_44_WITH_SHA512, "SHAKE128")

@@ -1,5 +1,5 @@
 from .ml_dsa import ML_DSA
-from hashlib import sha256, sha512, shake_128
+from hashlib import sha256, sha512, sha3_512, shake_128
 
 
 class HashML_DSA(ML_DSA):
@@ -16,6 +16,11 @@ class HashML_DSA(ML_DSA):
                 [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03]
             )
             ph_m = sha512(m).digest()
+        elif hash_name == "SHA3_512":
+            oid = bytes(
+                [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0a]
+            )
+            ph_m = sha3_512(m).digest()
         elif hash_name == "SHAKE128":
             oid = bytes(
                 [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0B]
