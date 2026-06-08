@@ -218,7 +218,7 @@ class ML_DSA:
         for poly_non_zero in non_zero_positions:
             coeffs = [0 for _ in range(256)]
             for i, non_zero in enumerate(poly_non_zero):
-                if i > 0 and non_zero < poly_non_zero[i - 1]:
+                if i > 0 and non_zero <= poly_non_zero[i - 1]:
                     raise ValueError(
                         "non-zero positions in h_bytes are not monotonically increasing"
                     )
