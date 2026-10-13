@@ -1,5 +1,6 @@
-from .ml_dsa import ML_DSA
 from hashlib import sha256, sha512, shake_128
+
+from .ml_dsa import ML_DSA
 
 
 class HashML_DSA(ML_DSA):

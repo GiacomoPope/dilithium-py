@@ -1,7 +1,8 @@
 import unittest
 from random import randint
-from dilithium_py.polynomials.polynomials_generic import PolynomialRingGeneric
+
 from dilithium_py.modules.modules_generic import ModuleGeneric
+from dilithium_py.polynomials.polynomials_generic import PolynomialRingGeneric
 
 
 class TestModule(unittest.TestCase):

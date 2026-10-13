@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from dilithium_py.drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 
 

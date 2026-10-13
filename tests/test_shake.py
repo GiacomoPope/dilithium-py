@@ -1,10 +1,11 @@
+import random
+import unittest
 from hashlib import shake_128, shake_256
-from dilithium_py.shake.shake_wrapper import shake128, shake256
+
 from Crypto.Hash.SHAKE128 import SHAKE128_XOF
 from Crypto.Hash.SHAKE256 import SHAKE256_XOF
 
-import unittest
-import random
+from dilithium_py.shake.shake_wrapper import shake128, shake256
 
 
 class TestShakeHashlib(unittest.TestCase):

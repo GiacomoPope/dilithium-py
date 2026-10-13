@@ -1,6 +1,7 @@
-import unittest
-import os
 import json
+import os
+import unittest
+
 from dilithium_py.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
 
 

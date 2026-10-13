@@ -1,6 +1,5 @@
-from .ml_dsa import ML_DSA
 from .hash_ml_dsa import HashML_DSA
-
+from .ml_dsa import ML_DSA
 
 DEFAULT_PARAMETERS = {
     "ML_DSA_44": {

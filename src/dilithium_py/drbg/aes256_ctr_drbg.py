@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import os
+
 from Crypto.Cipher import AES
-from typing import Optional
+
 from ..utilities.utils import xor_bytes
 
 
 class AES256_CTR_DRBG:
-    def __init__(self, seed: Optional[bytes] = None, personalization: bytes = b""):
+    def __init__(self, seed: bytes | None = None, personalization: bytes = b""):
         """
         DRBG implementation based on AES-256 CTR following the document NIST SP
         800-90A Section 10.2.1
@@ -30,7 +33,7 @@ class AES256_CTR_DRBG:
         self.__ctr_drbg_update(seed_material)
         self.reseed_ctr = 1
 
-    def __check_entropy_input(self, entropy_input: Optional[bytes] = None) -> bytes:
+    def __check_entropy_input(self, entropy_input: bytes | None = None) -> bytes:
         """
         If no entropy given, us os.urandom, else
         check that the input is of the right length.
@@ -93,7 +96,7 @@ class AES256_CTR_DRBG:
         self.key = tmp[:32]
         self.V = tmp[32:]
 
-    def random_bytes(self, num_bytes: int, additional: Optional[bytes] = None) -> bytes:
+    def random_bytes(self, num_bytes: int, additional: bytes | None = None) -> bytes:
         """
         Generate pseudorandom bytes without a generating function
 

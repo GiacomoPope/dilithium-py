@@ -1,6 +1,7 @@
 import unittest
-from dilithium_py.utilities.utils import reduce_mod_pm
 from random import randint
+
+from dilithium_py.utilities.utils import reduce_mod_pm
 
 
 class TestUtils(unittest.TestCase):

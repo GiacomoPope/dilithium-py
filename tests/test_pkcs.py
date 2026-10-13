@@ -1,18 +1,19 @@
-import unittest
 import copy
+import unittest
 
 from dilithium_py.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
 
 try:
-    from ecdsa.der import unpem
     from ecdsa import der
+    from ecdsa.der import unpem
+
     from dilithium_py.ml_dsa.pkcs import (
-        pk_to_pem,
         pk_from_der,
         pk_from_pem,
-        sk_to_pem,
+        pk_to_pem,
         sk_from_der,
         sk_from_pem,
+        sk_to_pem,
     )
 
     ECDSA_PRESENT = True
@@ -20,7 +21,7 @@ except ImportError:
     ECDSA_PRESENT = False
 
 
-class BaseTestSetup(object):
+class BaseTestSetup:
     def test_export_pk_to_pem(self):
         pem = pk_to_pem(self.ml_dsa, self.pk)
 
