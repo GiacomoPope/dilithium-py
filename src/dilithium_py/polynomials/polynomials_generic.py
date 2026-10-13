@@ -107,7 +107,7 @@ class PolynomialGeneric:
         b = other.coeffs
         new_coeffs = [0 for _ in range(n)]
         for i in range(n):
-            for j in range(0, n - i):
+            for j in range(n - i):
                 new_coeffs[i + j] += a[i] * b[j]
         for j in range(1, n):
             for i in range(n - j, n):
@@ -141,8 +141,7 @@ class PolynomialGeneric:
         return self.__add__(other)
 
     def __iadd__(self, other):
-        self = self + other
-        return self
+        return self + other
 
     def _sub_(self, other):
         if isinstance(other, type(self)):
@@ -166,8 +165,7 @@ class PolynomialGeneric:
         return -self.__sub__(other)
 
     def __isub__(self, other):
-        self = self - other
-        return self
+        return self - other
 
     def __mul__(self, other):
         if isinstance(other, type(self)):
@@ -184,8 +182,7 @@ class PolynomialGeneric:
         return self.__mul__(other)
 
     def __imul__(self, other):
-        self = self * other
-        return self
+        return self * other
 
     def __pow__(self, n):
         if not isinstance(n, int):
@@ -210,9 +207,12 @@ class PolynomialGeneric:
     def __eq__(self, other):
         if isinstance(other, type(self)):
             return self.coeffs == other.coeffs
-        elif isinstance(other, int):
-            if self.is_constant() and (other % self.parent.q) == self.coeffs[0]:
-                return True
+        elif (
+            isinstance(other, int)
+            and self.is_constant()
+            and (other % self.parent.q) == self.coeffs[0]
+        ):
+            return True
         return False
 
     def __getitem__(self, idx):

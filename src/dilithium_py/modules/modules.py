@@ -1,6 +1,7 @@
 from typing import cast
-from .modules_generic import ModuleGeneric, MatrixGeneric
+
 from ..polynomials.polynomials import PolynomialRing
+from .modules_generic import MatrixGeneric, ModuleGeneric
 
 
 class Matrix(MatrixGeneric):

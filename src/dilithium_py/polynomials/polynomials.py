@@ -1,12 +1,14 @@
-from .polynomials_generic import PolynomialRingGeneric, PolynomialGeneric
 from ..utilities.utils import (
-    reduce_mod_pm,
+    check_norm_bound,
+    decompose,
     high_bits,
     low_bits,
-    decompose,
-    check_norm_bound,
+    make_hint,
+    make_hint_optimised,
+    reduce_mod_pm,
+    use_hint,
 )
-from ..utilities.utils import make_hint, make_hint_optimised, use_hint
+from .polynomials_generic import PolynomialGeneric, PolynomialRingGeneric
 
 try:
     from xoflib import shake128, shake256
@@ -430,7 +432,7 @@ class PolynomialNTT(Polynomial):
         Number Theoretic Transform multiplication.
         """
         if not isinstance(other, type(self)):
-            raise ValueError
+            raise TypeError
 
         new_coeffs = self.ntt_coefficient_multiplication(self.coeffs, other.coeffs)
         return new_coeffs

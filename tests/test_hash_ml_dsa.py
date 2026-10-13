@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from dilithium_py.ml_dsa import (
     HASH_ML_DSA_44_WITH_SHA512,
     HASH_ML_DSA_65_WITH_SHA512,

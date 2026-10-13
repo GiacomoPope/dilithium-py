@@ -1,7 +1,8 @@
-from dilithium_py.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
 import cProfile
-from time import time
 from statistics import mean, median
+from time import time
+
+from dilithium_py.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
 
 
 def profile_ml_dsa(ML_DSA):

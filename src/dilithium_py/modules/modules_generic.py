@@ -36,7 +36,6 @@ class MatrixGeneric:
         Swap the rows and columns of the matrix in place
         """
         self._transpose = not self._transpose
-        return
 
     T = property(transpose)
 
@@ -73,7 +72,7 @@ class MatrixGeneric:
         if self.dim() != other.dim():
             return False
         m, n = self.dim()
-        return all([self[i, j] == other[i, j] for i in range(m) for j in range(n)])
+        return all(self[i, j] == other[i, j] for i in range(m) for j in range(n))
 
     def __neg__(self):
         """
@@ -100,8 +99,7 @@ class MatrixGeneric:
         )
 
     def __iadd__(self, other):
-        self = self + other
-        return self
+        return self + other
 
     def __sub__(self, other):
         if not isinstance(other, MatrixGeneric):
@@ -118,8 +116,7 @@ class MatrixGeneric:
         )
 
     def __isub__(self, other):
-        self = self - other
-        return self
+        return self - other
 
     def __matmul__(self, other):
         """
@@ -146,7 +143,7 @@ class MatrixGeneric:
         """
         Multiply each element of the matrix by a polynomial or integer
         """
-        if not (isinstance(other, self.parent.ring.element) or isinstance(other, int)):
+        if not isinstance(other, (self.parent.ring.element, int)):
             raise TypeError("Can only multiply elements with polynomials or integers")
 
         matrix = [[other * ele for ele in row] for row in self._data]
@@ -171,7 +168,7 @@ class MatrixGeneric:
         max_col_width = [max(len(str(self[i, j])) for i in range(m)) for j in range(n)]
         info = "]\n[".join(
             [
-                ", ".join([f"{str(self[i, j]):>{max_col_width[j]}}" for j in range(n)])
+                ", ".join([f"{self[i, j]!s:>{max_col_width[j]}}" for j in range(n)])
                 for i in range(m)
             ]
         )

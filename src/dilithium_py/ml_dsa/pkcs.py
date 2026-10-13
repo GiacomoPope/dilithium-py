@@ -15,7 +15,6 @@ except ImportError:
 
 from .default_parameters import ML_DSA_44, ML_DSA_65, ML_DSA_87
 
-
 OIDS = {
     ML_DSA_44.oid: ML_DSA_44,
     ML_DSA_65.oid: ML_DSA_65,

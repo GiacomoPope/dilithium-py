@@ -1,5 +1,6 @@
 import unittest
 from random import randint
+
 from dilithium_py.polynomials.polynomials_generic import PolynomialRingGeneric
 
 
@@ -14,7 +15,7 @@ class TestPolynomialRing(unittest.TestCase):
             f = self.R.random_element()
             self.assertEqual(type(f), self.R.element)
             self.assertEqual(len(f.coeffs), self.R.n)
-            self.assertTrue(all([c < self.R.q for c in f.coeffs]))
+            self.assertTrue(all(c < self.R.q for c in f.coeffs))
 
     def test_non_list_error(self):
         self.assertRaises(TypeError, lambda: self.R("1"))
@@ -51,7 +52,7 @@ class TestPolynomial(unittest.TestCase):
             # Create non-canonical coefficients
             coeffs = [randint(-2 * self.R.q, 3 * self.R.q) for _ in range(self.R.n)]
             f = self.R(coeffs).reduce_coefficients()
-            self.assertTrue(all([0 <= c < self.R.q for c in f.coeffs]))
+            self.assertTrue(all(0 <= c < self.R.q for c in f.coeffs))
 
     def test_equality(self):
         for _ in range(100):
@@ -147,7 +148,7 @@ class TestPolynomial(unittest.TestCase):
             self.assertEqual(f1, f1**1)
             self.assertEqual(f1 * f1, f1**2)
             self.assertEqual(f1 * f1 * f1, f1**3)
-            self.assertRaises(ValueError, lambda: f1 ** (-1))
+            self.assertRaises(ValueError, pow, f1, -1)
 
     def test_print(self):
         self.assertEqual(str(self.R(0)), "0")

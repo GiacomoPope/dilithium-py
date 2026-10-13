@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from dilithium_py.dilithium import Dilithium2, Dilithium3, Dilithium5
 from dilithium_py.drbg.aes256_ctr_drbg import AES256_CTR_DRBG
 
@@ -13,7 +14,7 @@ def parse_kat_data(data):
     count_blocks = data.split("\n\n")
     for block in count_blocks[1:-1]:
         block_data = block.split("\n")
-        count, seed, mlen, msg, pk, sk, smlen, sm = [
+        count, seed, mlen, msg, pk, sk, _smlen, sm = [
             line.split(" = ")[-1] for line in block_data
         ]
         parsed_data[int(count)] = {
